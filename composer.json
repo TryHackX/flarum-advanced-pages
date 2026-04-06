@@ -1,0 +1,34 @@
+{
+    "name": "tryhackx/flarum-advanced-pages",
+    "description": "Create advanced custom pages with HTML, BBCode, Markdown, PHP, or plain text content types for Flarum.",
+    "keywords": ["flarum", "pages", "custom-pages", "html", "bbcode", "markdown", "php", "cms"],
+    "version": "1.0.0",
+    "type": "flarum-extension",
+    "license": "MIT",
+    "require": {
+        "php": "^8.1",
+        "flarum/core": "^1.8"
+    },
+    "authors": [
+        {
+            "name": "TryHackX",
+            "homepage": "https://github.com/TryHackX"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "TryHackX\\AdvancedPages\\": "src/"
+        }
+    },
+    "extra": {
+        "flarum-extension": {
+            "title": "Advanced Pages",
+            "category": "feature",
+            "icon": {
+                "name": "fas fa-file-code",
+                "backgroundColor": "#4a90d9",
+                "color": "#fff"
+            }
+        }
+    }
+}

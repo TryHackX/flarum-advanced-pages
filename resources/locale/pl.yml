@@ -1,0 +1,72 @@
+tryhackx-advanced-pages:
+  admin:
+    permissions:
+      manage_pages_label: Zarządzanie zaawansowanymi stronami
+      view_spoilers_label: Wyświetlanie zawartości spoilerów
+
+    pages:
+      create_button: Utwórz stronę
+      title_column: Tytuł
+      slug_column: URL
+      type_column: Typ
+      status_column: Status
+      groups_column: Grupy
+      actions_column: Akcje
+      edit_button: Edytuj
+      published: Opublikowana
+      draft: Szkic
+      hidden: Ukryta
+      restricted: Wymaga logowania
+      everyone: Wszyscy
+      empty: Nie utworzono jeszcze żadnych stron.
+
+    settings:
+      title: Ustawienia BBCode
+      bbcode_help: Włącz lub wyłącz niestandardowe tagi BBCode do renderowania stron. Zmiany wymagają wyczyszczenia cache formattera (php flarum cache:clear).
+      bbcode_table: "[table] [tr] [th] [td] — Tabele"
+      bbcode_spoiler: "[spoiler] — Spoiler/Szczegóły"
+      bbcode_center: "[center] — Wyśrodkowanie tekstu"
+      bbcode_url: "[url] — Rozszerzony parser URL (akceptuje URL-e odrzucone przez Flarum)"
+
+    edit_page:
+      create_title: Utwórz stronę
+      edit_title: Edytuj stronę
+      title_label: Tytuł
+      slug_label: Slug URL
+      content_type_label: Typ treści
+      type_text: Zwykły tekst
+      content_label: Treść
+      is_published_label: Opublikowana
+      is_hidden_label: Ukryta (widoczna tylko dla adminów)
+      is_restricted_label: Ograniczona (wymaga logowania)
+      visible_groups_label: Widoczna dla grup
+      visible_groups_help: Pozostaw wszystkie zaznaczone, aby strona była widoczna dla wszystkich. Odznacz grupy, aby ograniczyć dostęp. Administratorzy zawsze mają dostęp.
+      raw: Surowy
+      preview: Podgląd
+      meta_description_label: Meta opis (SEO)
+      submit_button: Zapisz stronę
+      delete_button: Usuń
+      delete_title: Usuń stronę
+      delete_confirmation: Czy na pewno chcesz usunąć tę stronę? Tej operacji nie można cofnąć.
+      cancel_button: Anuluj
+      unsaved_title: Niezapisane zmiany
+      unsaved_message: Masz niezapisane zmiany. Czy na pewno chcesz zamknąć bez zapisywania?
+      discard_button: Odrzuć
+      keep_editing_button: Kontynuuj edycję
+      newline_mode_label: Tryb nowych linii
+      newline_flarum: "Flarum (waniliowy — wiele nowych linii = jeden przerwa)"
+      newline_preserve: "Zachowaj (respektuj wszystkie nowe linie)"
+      php_warning: "Strony PHP wykonują kod po stronie serwera. Twórz strony PHP tylko jeśli rozumiesz konsekwencje bezpieczeństwa. Błędy są logowane, ale nigdy nie są wyświetlane odwiedzającym."
+
+    support:
+      button: Wesprzyj rozwój
+      title: Wesprzyj tę modyfikację
+      description: Jeśli uważasz tę modyfikację za przydatną, rozważ wsparcie jej rozwoju niewielką darowizną. Każdy wkład pomaga utrzymać projekt przy życiu.
+      copy: Kopiuj adres
+      thanks: Dziękuję za wsparcie!
+
+  forum:
+    page:
+      loading: Ładowanie...
+      not_found_title: Strona nie znaleziona
+      not_found_message: Strona, której szukasz, nie istnieje lub nie masz uprawnień do jej przeglądania.
