@@ -6,6 +6,8 @@
 
 Create advanced custom pages with **HTML**, **BBCode**, **Markdown**, **PHP**, or **plain text** content types for your Flarum 2.x forum. A powerful alternative to fof/pages with multi-format support, live preview, formatting toolbars, and granular access control.
 
+> **Latest (v2.0.2):** Added "Replace Forum Spoiler" setting that replaces Flarum's default inline spoiler with the Advanced Pages details/summary spoiler style across all forum posts. New "Forum Integration" settings section in admin. Support button moved to top of admin page with CSS improvements.
+
 ## Features
 
 - **5 content types** - HTML (HTMLPurifier sanitized), BBCode, Markdown, PHP (sandboxed), Plain Text
@@ -25,7 +27,7 @@ Create advanced custom pages with **HTML**, **BBCode**, **Markdown**, **PHP**, o
 
 ![Admin panel with page management, BBCode editor with toolbar, and live preview](assets/preview.gif)
 
-*Admin panel with page management, BBCode editor with toolbar, and live preview.*
+*Admin panel with page management, and live preview.*
 
 ## Support Development
 

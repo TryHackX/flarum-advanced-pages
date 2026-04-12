@@ -45,19 +45,25 @@ return [
                 $tag = $configurator->tags->add('SPOILER');
                 $tag->attributes->add('title');
                 $tag->attributes['title']->required = false;
-                $tag->template =
-                    '<details class="AdvancedPages-spoiler" data-spoiler="1">' .
-                        '<summary>' .
-                            '<span class="AdvancedPages-spoilerIcon"><i class="fas fa-eye"></i></span> ' .
-                            '<span class="AdvancedPages-spoilerTitle">' .
-                                '<xsl:choose>' .
-                                    '<xsl:when test="@title">Spoiler: <xsl:value-of select="@title"/></xsl:when>' .
-                                    '<xsl:otherwise>Spoiler</xsl:otherwise>' .
-                                '</xsl:choose>' .
-                            '</span>' .
-                        '</summary>' .
-                        '<div class="AdvancedPages-spoilerContent"><xsl:apply-templates/></div>' .
-                    '</details>';
+
+                if ($settings->get('tryhackx-advanced-pages.replace_forum_spoiler')) {
+                    $tag->template =
+                        '<details class="AdvancedPages-spoiler" data-spoiler="1">' .
+                            '<summary>' .
+                                '<span class="AdvancedPages-spoilerIcon"><i class="fas fa-eye"></i></span> ' .
+                                '<span class="AdvancedPages-spoilerTitle">' .
+                                    '<xsl:choose>' .
+                                        '<xsl:when test="@title">Spoiler: <xsl:value-of select="@title"/></xsl:when>' .
+                                        '<xsl:otherwise>Spoiler</xsl:otherwise>' .
+                                    '</xsl:choose>' .
+                                '</span>' .
+                            '</summary>' .
+                            '<div class="AdvancedPages-spoilerContent"><xsl:apply-templates/></div>' .
+                        '</details>';
+                } else {
+                    $tag->template =
+                        '<details class="spoiler" data-s9e-livepreview-ignore-attrs="open"><xsl:apply-templates/></details>';
+                }
 
                 $bbcode = $configurator->BBCodes->add('SPOILER');
                 $bbcode->defaultAttribute = 'title';
@@ -66,11 +72,16 @@ return [
             if ($settings->get('tryhackx-advanced-pages.bbcode_center', true)) {
                 $configurator->BBCodes->addCustom('[center]{TEXT}[/center]', '<div style="text-align:center">{TEXT}</div>');
             }
+
         }),
 
     (new Extend\Settings())
         ->default('tryhackx-advanced-pages.bbcode_table', true)
         ->default('tryhackx-advanced-pages.bbcode_spoiler', true)
         ->default('tryhackx-advanced-pages.bbcode_center', true)
-        ->default('tryhackx-advanced-pages.bbcode_url', false),
+        ->default('tryhackx-advanced-pages.bbcode_url', false)
+        ->default('tryhackx-advanced-pages.replace_forum_spoiler', false)
+        ->serializeToForum('tryhackx-advanced-pages.replace_forum_spoiler', 'tryhackx-advanced-pages.replace_forum_spoiler', function ($value) {
+            return (bool) $value;
+        }),
 ];

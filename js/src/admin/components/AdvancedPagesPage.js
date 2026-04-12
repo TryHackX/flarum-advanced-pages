@@ -51,6 +51,16 @@ export default class AdvancedPagesPage extends ExtensionPage {
     return (
       <div className="AdvancedPagesContent">
         <div className="container">
+          <div className="AdvancedPages-support">
+            <Button
+              className="Button"
+              icon="fas fa-heart"
+              onclick={() => app.modal.show(SupportModal)}
+            >
+              {app.translator.trans('tryhackx-advanced-pages.admin.support.button')}
+            </Button>
+          </div>
+
           <div className="AdvancedPages-header">
             <Button
               className="Button Button--primary"
@@ -148,18 +158,18 @@ export default class AdvancedPagesPage extends ExtensionPage {
                 label: app.translator.trans('tryhackx-advanced-pages.admin.settings.bbcode_url'),
               })}
             </div>
+            <h3>{app.translator.trans('tryhackx-advanced-pages.admin.settings.forum_title')}</h3>
+            <p className="helpText">{app.translator.trans('tryhackx-advanced-pages.admin.settings.forum_help')}</p>
+            <div className="AdvancedPages-settingsGrid">
+              {this.buildSettingComponent({
+                type: 'boolean',
+                setting: 'tryhackx-advanced-pages.replace_forum_spoiler',
+                label: app.translator.trans('tryhackx-advanced-pages.admin.settings.replace_forum_spoiler'),
+              })}
+            </div>
             {this.submitButton()}
           </div>
 
-          <div className="AdvancedPages-support">
-            <Button
-              className="Button"
-              icon="fas fa-heart"
-              onclick={() => app.modal.show(SupportModal)}
-            >
-              {app.translator.trans('tryhackx-advanced-pages.admin.support.button')}
-            </Button>
-          </div>
         </div>
       </div>
     );
