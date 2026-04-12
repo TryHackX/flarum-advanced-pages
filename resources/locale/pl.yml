@@ -27,6 +27,9 @@ tryhackx-advanced-pages:
       bbcode_spoiler: "[spoiler] — Spoiler/Szczegóły"
       bbcode_center: "[center] — Wyśrodkowanie tekstu"
       bbcode_url: "[url] — Rozszerzony parser URL (akceptuje URL-e odrzucone przez Flarum)"
+      forum_title: Integracja z forum
+      forum_help: Zmień sposób wyświetlania spoilerów w zwykłych postach na forum. Wymaga wyczyszczenia cache formattera (php flarum cache:clear).
+      replace_forum_spoiler: "Zastąp domyślny spoiler Flarum spoilerem w stylu Advanced Pages (details/summary)"
 
     edit_page:
       create_title: Utwórz stronę

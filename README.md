@@ -1,10 +1,12 @@
 # Advanced Pages for Flarum
 
-[![Flarum 2.x](https://img.shields.io/badge/Flarum-2.x-orange)](https://flarum.org)
+[![Flarum 1.x](https://img.shields.io/badge/Flarum-1.x-orange)](https://flarum.org)
 [![Packagist](https://img.shields.io/packagist/v/tryhackx/flarum-advanced-pages)](https://packagist.org/packages/tryhackx/flarum-advanced-pages)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-Create advanced custom pages with **HTML**, **BBCode**, **Markdown**, **PHP**, or **plain text** content types for your Flarum 2.x forum. A powerful alternative to fof/pages with multi-format support, live preview, formatting toolbars, and granular access control.
+Create advanced custom pages with **HTML**, **BBCode**, **Markdown**, **PHP**, or **plain text** content types for your Flarum 1.x forum. A powerful alternative to fof/pages with multi-format support, live preview, formatting toolbars, and granular access control.
+
+> **Latest (v1.0.2):** Added "Replace Forum Spoiler" setting that replaces Flarum's default inline spoiler with the Advanced Pages details/summary spoiler style across all forum posts. New "Forum Integration" settings section in admin. Support button moved to top of admin page with CSS improvements.
 
 ## Features
 
@@ -37,7 +39,7 @@ You can also find the donation option in the extension's admin settings panel.
 
 ## Requirements
 
-- **Flarum** `^2.0`
+- **Flarum** `^1.8`
 - **PHP** `^8.1`
 - **PHP memory_limit** `256M` minimum (512M+ recommended)
 
