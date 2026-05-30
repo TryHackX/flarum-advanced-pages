@@ -167,7 +167,10 @@ export default class AdvancedPagesPage extends ExtensionPage {
                 label: app.translator.trans('tryhackx-advanced-pages.admin.settings.replace_forum_spoiler'),
               })}
             </div>
-            {this.submitButton()}
+            <div className="Form-group Form-controls">
+              {this.submitButton()}
+              {this.resetButton()}
+            </div>
           </div>
 
         </div>
