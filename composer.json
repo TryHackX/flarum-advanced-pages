@@ -1,15 +1,19 @@
 {
     "name": "tryhackx/flarum-advanced-pages",
-    "description": "Create advanced custom pages with HTML, BBCode, Markdown, PHP, or plain text content types for Flarum 2.x.",
+    "description": "Create advanced custom pages with HTML, BBCode, Markdown, PHP, or plain text, featuring nested hierarchies, breadcrumbs, and granular console-managed permissions for Flarum 2.x.",
     "keywords": [
         "flarum",
+        "extension",
         "pages",
         "custom-pages",
+        "nested-pages",
+        "breadcrumbs",
         "html",
         "bbcode",
         "markdown",
         "php",
-        "cms"
+        "cms",
+        "permissions"
     ],
     "type": "flarum-extension",
     "license": "MIT",
@@ -25,8 +29,8 @@
         "source": "https://github.com/TryHackX/flarum-advanced-pages"
     },
     "require": {
-        "php": "^8.1",
-        "flarum/core": "^2.0"
+        "php": "^8.2",
+        "flarum/core": "^2.0.0-rc.1"
     },
     "autoload": {
         "psr-4": {
@@ -39,7 +43,7 @@
             "category": "feature",
             "icon": {
                 "name": "fas fa-file-code",
-                "color": "#fff",
+                "color": "#ffffff",
                 "backgroundColor": "#4a90d9"
             }
         }

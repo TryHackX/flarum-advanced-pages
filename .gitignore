@@ -1,17 +1,22 @@
 # Dependencies
 /vendor/
+vendor/
 /node_modules/
+node_modules/
 /js/node_modules/
 composer.lock
 
-# Editor / OS
+# Editor / OS / IDE
 /.idea/
 /.vscode/
 /.claude/
 .DS_Store
+*.DS_Store
 Thumbs.db
 *.log
 
-# Local-only publish helper (not part of the package)
+# Local-only / Repository configs
+.gitignore
 PUBLISH.md
 PUBLISHING.md
+FORUM_POST_*.txt
