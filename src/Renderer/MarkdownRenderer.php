@@ -17,7 +17,7 @@ class MarkdownRenderer implements RendererInterface
         return $contentType === 'markdown';
     }
 
-    public function render(Page $page, ?\Flarum\User\User $actor = null): string
+    public function render(Page $page, ?\Flarum\User\User $actor = null, ?string $csrfToken = null): string
     {
         $xml = $this->formatter->parse($page->content, null, null);
         $html = $this->formatter->render($xml);

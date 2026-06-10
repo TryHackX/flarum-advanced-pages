@@ -6,6 +6,80 @@
   margin-bottom: 20px;
 }
 
+.AdvancedPages-treeMarker {
+  color: var(--muted-color);
+  opacity: 0.6;
+}
+
+// --- Drag-and-drop (reorder + nest) ---
+.AdvancedPages-row {
+  transition: background 0.15s ease, box-shadow 0.12s ease, opacity 0.12s ease;
+
+  td {
+    transition: background 0.15s ease, box-shadow 0.12s ease;
+  }
+}
+
+.AdvancedPages-dragHandle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  min-height: 30px;
+  margin-left: 4px;
+  color: var(--muted-color);
+  border-radius: 4px;
+  cursor: grab;
+  transition: color 0.15s ease, background 0.15s ease;
+
+  &:hover {
+    color: var(--text-color);
+    background: var(--control-bg);
+  }
+
+  &:active {
+    cursor: grabbing;
+  }
+}
+
+.AdvancedPages-row.is-dragging {
+  opacity: 0.35;
+}
+
+// Drop onto a row → it becomes the parent.
+.AdvancedPages-row.drop-into > td {
+  background: var(--control-bg);
+  box-shadow: inset 0 0 0 2px var(--primary-color);
+}
+
+// Drop above/below a row → reorder at the same level (a line marks the spot).
+.AdvancedPages-row.drop-before > td {
+  box-shadow: inset 0 3px 0 -1px var(--primary-color);
+}
+
+.AdvancedPages-row.drop-after > td {
+  box-shadow: inset 0 -3px 0 -1px var(--primary-color);
+}
+
+// Brief highlight on the row that was just moved.
+.AdvancedPages-row.just-moved > td {
+  animation: AdvancedPages-flash 0.7s ease;
+}
+
+@keyframes AdvancedPages-flash {
+  from { background: var(--primary-color); }
+  to { background: transparent; }
+}
+
+.AdvancedPages-cssEditor {
+  margin-top: 8px;
+  font-family: 'Fira Code', 'Consolas', 'Monaco', monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre;
+  tab-size: 2;
+}
+
 .AdvancedPages-table {
   width: 100%;
   border-collapse: collapse;
@@ -684,5 +758,14 @@
   .hljs-link {
     text-decoration: underline;
   }
+}
+
+// Core's "Reset extension settings" modal renders its Cancel button as a plain
+// borderless Button, which looks out of place under dark themes. Give it the
+// standard control look here, scoped to that core modal — this replaces the old
+// document-wide MutationObserver that tagged the button at runtime.
+.ResetExtensionSettingsModal .Form-controls .Button:not(.Button--primary):not(.Button--danger) {
+  background: var(--control-bg);
+  color: var(--control-color);
 }
 

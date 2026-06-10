@@ -3,6 +3,7 @@
 namespace TryHackX\AdvancedPages\Renderer;
 
 use Flarum\Formatter\Formatter;
+use Flarum\Locale\TranslatorInterface;
 use Flarum\Settings\SettingsRepositoryInterface;
 use Flarum\User\User;
 use TryHackX\AdvancedPages\Page;
@@ -11,7 +12,8 @@ class BbcodeRenderer implements RendererInterface
 {
     public function __construct(
         protected Formatter $formatter,
-        protected SettingsRepositoryInterface $settings
+        protected SettingsRepositoryInterface $settings,
+        protected TranslatorInterface $translator
     ) {
     }
 
@@ -20,7 +22,7 @@ class BbcodeRenderer implements RendererInterface
         return $contentType === 'bbcode';
     }
 
-    public function render(Page $page, ?User $actor = null): string
+    public function render(Page $page, ?User $actor = null, ?string $csrfToken = null): string
     {
         $content = $page->content;
         $newlineMode = $page->newline_mode ?? 'flarum';
@@ -98,9 +100,33 @@ class BbcodeRenderer implements RendererInterface
 
     protected function hideSpoilerContent(string $html): string
     {
-        return preg_replace(
-            '/<div class="AdvancedPages-spoilerContent">(.*?)<\/div>/s',
-            '<div class="AdvancedPages-spoilerContent"><p class="AdvancedPages-spoilerLocked"><i class="fas fa-lock"></i> You do not have permission to view spoiler content.</p></div>',
+        $message = htmlspecialchars(
+            $this->translator->trans('tryhackx-advanced-pages.forum.spoiler.locked'),
+            ENT_QUOTES,
+            'UTF-8'
+        );
+        $lockedBody = '<div class="AdvancedPages-spoilerContent">'
+            . '<p class="AdvancedPages-spoilerLocked"><i class="fas fa-lock"></i> ' . $message . '</p>'
+            . '</div>';
+
+        // Match a whole spoiler <details>…</details> block. The class test matches
+        // both the Advanced Pages template (class="AdvancedPages-spoiler") and
+        // Flarum's default one (class="spoiler"), so gating works regardless of the
+        // "Replace Forum Spoiler" setting. The body is replaced wholesale — only the
+        // <summary> (title) is kept — so nothing inside can leak, even when the
+        // content contains nested <div>s (which defeated the old first-</div> regex).
+        return preg_replace_callback(
+            '#<details\b[^>]*\bclass="[^"]*spoiler[^"]*"[^>]*>(.*?)</details>#is',
+            function (array $m) use ($lockedBody) {
+                $openTag = substr($m[0], 0, strpos($m[0], '>') + 1);
+
+                $summary = '';
+                if (preg_match('#<summary\b[^>]*>.*?</summary>#is', $m[1], $sm)) {
+                    $summary = $sm[0];
+                }
+
+                return $openTag . $summary . $lockedBody . '</details>';
+            },
             $html
         );
     }

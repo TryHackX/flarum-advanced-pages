@@ -9,31 +9,28 @@ or **plain text** content types for your Flarum 2.x forum. A powerful
 alternative to `fof/pages` with multi-format support, live preview,
 formatting toolbars, and granular access control.
 
-> **Latest highlights:**
-> - **"View spoiler content" defaults to Members** — a new migration
->   grants `advancedPages.viewSpoilers` to the Members group on install,
->   so the permission row in the admin grid is correctly defaulted
->   rather than being implicitly admin-only.
-> - **Reset Settings button in the admin panel** — `AdvancedPagesPage`
->   is a custom admin page, so Flarum didn't auto-render the standard
->   *Reset Settings* button next to *Save Changes*. It now sits in the
->   familiar place (wrapped in `Form-group Form-controls`, danger
->   colour like other extensions) and reverts this extension's
->   settings via Flarum core's `ResetExtensionSettingsModal`.
-> - **Cancel button in the "Reset extension settings" modal** uses
->   Flarum's standard `Button--inverted` style now (was a plain
->   borderless button under dark themes). Applied via a small
->   `MutationObserver` that tags the button when the modal appears.
->   Each TryHackX extension registers this independently in its admin
->   bundle, so the fix follows whichever extension is installed.
+> **Latest highlights (2.1.0):**
+> - **Nested / child pages** with a *Parent Page* selector, **drag-and-drop**
+>   ordering & nesting in the admin (grab the `⋮⋮` handle), parent-chain
+>   breadcrumbs, and optional **per-tree breadcrumb CSS** (style or hide them).
+> - **Per-content-type creation permissions** — control who can create
+>   Plain Text / BBCode / Markdown pages from the admin grid, and who can
+>   create the sensitive **HTML** / **PHP** pages via a dedicated console
+>   command (`php flarum advancedpages:permission`).
+> - **Per-page "Allow script execution" toggle** — `<script>` tags in a
+>   page now run only when you explicitly opt in (off by default).
+> - **Cross-database visibility** — per-group visibility now works on
+>   SQLite and PostgreSQL too, not just MySQL/MariaDB.
+> - `$actor` now works inside PHP pages.
 
-> **Note:** Recent updates target the **2.x** line only. There is no
-> 1.x line for this extension (Advanced Pages is Flarum 2.x only).
+> **Note:** Advanced Pages targets the **2.x** line only (Flarum 2.x).
 
 ## Features
 
-- **5 content types** — HTML (HTMLPurifier sanitised), BBCode, Markdown,
-  PHP (sandboxed), Plain Text.
+- **5 content types** — HTML (rendered raw — admin/permission-gated),
+  BBCode, Markdown, PHP (server-side, admin/permission-gated), Plain Text.
+- **Nested pages** — parent/child hierarchy with slash-based URLs and
+  breadcrumbs.
 - **Formatting toolbars** — context-aware buttons for the BBCode and
   Markdown editors.
 - **Live preview** — Raw / Preview toggle with syntax highlighting
@@ -52,9 +49,13 @@ formatting toolbars, and granular access control.
   this extension's settings).
 - **SEO support** — meta descriptions and proper `<title>` tags.
 - **Access control** — publish, hide (admin-only), restrict
-  (login-required), per-group visibility.
-- **Custom permissions** — manage pages, view spoiler content.
-- **Clean URLs** — pages live at `/p/{slug}`.
+  (login-required), per-group visibility (works on MySQL/MariaDB,
+  SQLite 3.38+ and PostgreSQL).
+- **Granular permissions** — manage pages, view spoiler content, and
+  per-content-type page creation (text/BBCode/Markdown in the admin
+  grid; HTML/PHP via console command).
+- **Clean URLs** — pages live at `/p/{slug}`, including nested paths
+  like `/p/docs/getting-started`.
 
 ## Screenshots
 
@@ -120,10 +121,10 @@ php flarum cache:clear
 
 | Type | Description | Security |
 | --- | --- | --- |
-| **HTML** | Full HTML with styles / scripts / forms | Raw output, permission-gated |
+| **HTML** | Full HTML with styles / forms / (opt-in) scripts | **Rendered raw, NOT sanitised.** Creation gated by `advancedPages.create.html` (console-only). `<script>` runs only if *Allow script execution* is enabled per page. |
 | **BBCode** | BBCode with custom tags & toolbar | Escaped and parsed via s9e/TextFormatter |
 | **Markdown** | Full Markdown with live preview | Escaped and parsed via s9e/TextFormatter |
-| **PHP** | Server-side PHP execution | Admin-only, sandboxed, errors logged never shown |
+| **PHP** | Server-side PHP execution (`eval`) | **Full server privileges** — not a real sandbox. Creation gated by `advancedPages.create.php` (console-only). Errors logged, never shown. |
 | **Plain Text** | Auto-escaped text with URL linking | Fully escaped output |
 
 ### BBCode toggles
@@ -152,18 +153,132 @@ Per-page newline behaviour:
 
 ### PHP pages
 
-PHP pages execute in a sandboxed scope with access to:
+> ⚠️ PHP pages run via `eval()` with **full server privileges**. The closure
+> only scopes the variables below — it is **not** a security sandbox. Treat the
+> ability to create PHP pages as equivalent to shell access. By default only
+> administrators can create them.
+
+PHP page code runs in a closure with access to:
 
 - `$page` — current Page model
-- `$actor` — current user (or `null` for guests)
-- `$settings` — Flarum SettingsRepository
+- `$actor` — the current user. This is always a `User` object; for guests it is
+  a guest instance (`$actor->isGuest() === true`), not `null`.
+- `$settings` — Flarum `SettingsRepository`
+- `$csrfToken` — the current session's CSRF token (see *Forms* below)
+- `$pages` — read-only page-tree helper for nav menus (see *Building a nav menu* below)
+- the usual PHP superglobals: `$_GET`, `$_POST`, `$_FILES`, `$_SERVER`, …
 
 ```php
-<h1>Welcome, <?= htmlspecialchars($actor ? $actor->display_name : 'Guest') ?></h1>
+<h1>Welcome, <?= htmlspecialchars($actor->isGuest() ? 'Guest' : $actor->display_name) ?></h1>
 <p>Current time: <?= date('Y-m-d H:i:s') ?></p>
 ```
 
 PHP errors are written to Flarum's log but never shown to visitors.
+
+#### Forms, GET, POST and file uploads
+
+PHP pages can read query strings and handle form submissions — including file
+uploads — through the normal PHP superglobals:
+
+- **GET** — `…/p/your-page?q=hello` → `$_GET['q']`. Works out of the box.
+- **POST / file upload** — a `<form method="post">` (use
+  `enctype="multipart/form-data"` for files) submits **back to the same page**
+  URL; read `$_POST` / `$_FILES`. Because the page lives on a normal forum route,
+  Flarum's CSRF protection applies, so the form **must include the session
+  token** — emit it with the `$csrfToken` variable:
+
+```php
+<?php if ($_SERVER['REQUEST_METHOD'] === 'POST'): ?>
+  <p>You said: <?= htmlspecialchars($_POST['message'] ?? '') ?></p>
+  <?php if (!empty($_FILES['file']['name'])): ?>
+    <p>Uploaded: <?= htmlspecialchars($_FILES['file']['name']) ?>
+       (<?= (int) $_FILES['file']['size'] ?> bytes)</p>
+  <?php endif; ?>
+<?php endif; ?>
+
+<form method="post" enctype="multipart/form-data">
+  <input type="hidden" name="csrfToken" value="<?= htmlspecialchars($csrfToken) ?>">
+  <input name="message" placeholder="Say something">
+  <input type="file" name="file">
+  <button type="submit">Send</button>
+</form>
+```
+
+A POST without a valid `csrfToken` is rejected with HTTP 400 — this is Flarum's
+standard CSRF protection, not a limitation of the extension. (A live demo page
+ships at `/p/php-request-test`.)
+
+#### Building a nav menu — the `$pages` tree helper
+
+PHP pages get a read-only `$pages` helper for walking the page tree, so you can
+generate a navigation menu, a sidebar, a sitemap, etc. **It only ever returns
+pages the current viewer is allowed to see** (drafts, hidden, restricted and
+per-group pages are filtered out automatically) and is ordered to match the
+admin tree — so menus never leak hidden pages. The whole visible set is loaded
+in a single query, no matter how many calls you make.
+
+| Method | Returns |
+| --- | --- |
+| `$pages->all()` | All visible pages (flat, ordered). |
+| `$pages->roots()` | Top-level pages (no parent). |
+| `$pages->children($slug)` | Direct children of a page (by slug, id or Page). |
+| `$pages->tree($slug)` | Nested `['page' => Page, 'children' => [...]]` array — pass a slug (e.g. `'docs'`) for that subtree, or nothing for the whole forest. |
+| `$pages->find($slug)` | A single page by slug or id (or `null`). |
+| `$pages->ancestors($page)` | The parent chain (root → immediate parent). |
+
+Each `Page` exposes `->title`, `->slug`, `->content_type`, `->is_published`, etc.
+
+```php
+<?php
+// A nested <ul> menu of everything under /p/docs (visibility-aware).
+function ap_menu(array $nodes): void {
+    if (!$nodes) return;
+    echo '<ul>';
+    foreach ($nodes as $node) {
+        $p = $node['page'];
+        printf('<li><a href="/p/%s">%s</a>',
+            htmlspecialchars($p->slug), htmlspecialchars($p->title));
+        ap_menu($node['children']); // recurse into children
+        echo '</li>';
+    }
+    echo '</ul>';
+}
+
+ap_menu($pages->tree('docs'));
+?>
+```
+
+### Nested pages, ordering & breadcrumbs
+
+Pages form a tree. **The hierarchy (parent + order) is the organisation; the
+slug is the independent URL.** A child page renders breadcrumbs built from its
+parent chain (each ancestor links to its own page).
+
+Two ways to organise pages:
+
+- **Parent Page selector** in the editor — pick a parent (for a brand-new page it
+  also suggests a matching child slug, which you can edit).
+- **Drag and drop** in the admin list — grab the `⋮⋮` handle at the end of a row
+  and:
+  - drop it **onto** another page to nest it underneath, or
+  - drop it **between** rows to reorder it at that level.
+
+  Order is saved per parent; a page can't be dropped into its own subtree.
+
+Slugs may be a slash path (e.g. `docs/getting-started`) or flat — your choice;
+they accept lowercase `a-z0-9-` segments joined by single `/` (no leading,
+trailing or doubled slashes).
+
+#### Per-tree breadcrumb styling
+
+On a **root** page (Parent Page = *none*), tick **Custom breadcrumbs CSS?** to
+reveal a small CSS editor. Whatever you write applies to the breadcrumbs of that
+page and everything nested under it — target `.AdvancedPages-breadcrumbs`. For
+example, hide them entirely:
+
+```css
+.AdvancedPages-breadcrumbs { display: none; }
+```
 
 ### Page visibility
 
@@ -177,10 +292,73 @@ PHP errors are written to Flarum's log but never shown to visitors.
 
 ### Permissions
 
-| Permission | Section | Default | Description |
-| --- | --- | --- | --- |
-| Manage Advanced Pages | Moderate | Mods | Create, edit, delete pages. |
-| View spoiler content | View | **Members** | See spoiler content on pages (default set by migration on install / enable). |
+**Out of the box, only administrators can create, edit or delete pages.** To let
+other groups help, you grant access in **two places**:
+
+1. **The admin Permissions page** — for everyday things: who can create the safe
+   page types (Plain Text, BBCode, Markdown), who can edit/delete pages, and who
+   can see spoiler content. Just tick the boxes.
+2. **One console command** — for the two *powerful* page types, **HTML** and
+   **PHP**.
+
+**Why are HTML and PHP separate?** An HTML page can run JavaScript in every
+visitor's browser, and a PHP page runs code on your server. Letting a group
+create those is a big deal, so it's deliberately kept **out of the clickable
+admin panel** (you can't enable it by accident) and done from the server console
+instead.
+
+What each permission lets a group do:
+
+| Permission | Where you grant it | Lets the group… |
+| --- | --- | --- |
+| Create: Plain Text / BBCode / Markdown | Admin → **Permissions** page | Create those (safe, escaped) page types. |
+| Create: **HTML** | **Console** (below) | Create HTML pages (raw HTML/JS). |
+| Create: **PHP** | **Console** (below) | Create PHP pages (server-side code). |
+| Manage Advanced Pages | Admin → **Permissions** page | Edit & delete existing pages. |
+| View spoiler content | Admin → **Permissions** page | See `[spoiler]` content (default: Members). |
+
+> Editing also needs *Manage Advanced Pages*. On top of that, turning a page into
+> — or editing — an HTML/PHP page needs that group's HTML/PHP create permission
+> too, so a manager can't sneak executable code in without it.
+
+#### The console command
+
+```
+php flarum advancedpages:permission <action> [<group>] [<type>] [--force]
+```
+
+- **`<action>`** — `list`, `grant`, or `revoke`.
+- **`<group>`** — the group's name (e.g. `Members`, or `"Trusted Authors"` in
+  quotes if it has a space) **or** its number. Run `list` to see the numbers.
+- **`<type>`** — `text`, `bbcode`, `markdown`, `html`, `php`, or `all` (every
+  create type at once). You can also pass `manage` (edit/delete) or `spoilers`.
+- **`--force`** — only needed when granting `html`, `php` or `all`. It's a
+  safety confirmation for the dangerous ones (revoking never needs it).
+
+Recipes:
+
+```bash
+# See who can do what (and the group numbers)
+php flarum advancedpages:permission list
+
+# Let the "Members" group write Markdown pages (same as ticking the box)
+php flarum advancedpages:permission grant Members markdown
+
+# Let a "Trusted Authors" group build HTML pages (dangerous → needs --force)
+php flarum advancedpages:permission grant "Trusted Authors" html --force
+
+# Let a group create PHP pages — by group number this time
+php flarum advancedpages:permission grant 4 php --force
+
+# Let your moderators edit & delete any page
+php flarum advancedpages:permission grant Mods manage
+
+# Take a permission back
+php flarum advancedpages:permission revoke Members markdown
+```
+
+Changes apply immediately — no cache clear. Administrators always have every
+permission, so you can't (and don't need to) target them.
 
 ## Memory requirements
 
@@ -195,17 +373,42 @@ Flarum compiles all extension LESS styles together. If you get
 
 ## Security
 
-- HTML pages are rendered raw (full HTML / CSS / JS) — page creation is
-  permission-gated.
-- PHP execution is sandboxed in an isolated closure with custom error
-  handling.
-- PHP errors are never exposed to end users.
-- Only admins can create PHP pages.
-- The raw `content` field is hidden from non-admin API responses.
-- URL-scheme blocking (`javascript:`, `data:`, `vbscript:`) in the
-  extended URL parser.
-- Spoiler content is stripped server-side for users without the
-  `advancedPages.viewSpoilers` permission.
+This extension intentionally lets trusted authors publish raw HTML and run
+server-side PHP — that is the whole point. Understand the model before
+delegating page creation:
+
+- **HTML is rendered raw and is NOT sanitised.** Whoever can create HTML pages
+  can publish arbitrary markup and (if *Allow script execution* is enabled on
+  that page) JavaScript to every visitor. There is no HTMLPurifier. Treat
+  `advancedPages.create.html` as "can run JS in every visitor's browser".
+- **PHP pages run via `eval()` with full server privileges** — not a sandbox.
+  Treat `advancedPages.create.php` as equivalent to shell access. PHP errors are
+  logged, never shown to visitors.
+- **Safe by default:** out of the box only administrators can create or edit
+  pages. HTML and PHP creation can only be delegated via the
+  `advancedpages:permission` console command (never an accidental panel click).
+- `<script>` execution is **opt-in per page** (off by default).
+- The raw `content` field is hidden from non-admin API responses (only the
+  rendered output is exposed).
+- Spoiler content is stripped server-side for users without
+  `advancedPages.viewSpoilers`, regardless of the *Replace Forum Spoiler* setting.
+- URL-scheme blocking (`javascript:`, `data:`, `vbscript:`) in the extended
+  `[url]` BBCode parser.
+
+## Database support
+
+Works on every database Flarum 2.x supports — **MySQL / MariaDB, SQLite 3.38+,
+and PostgreSQL** — including the per-group page visibility feature (uses
+Laravel's cross-database JSON query builder).
+
+## Note on cache clearing (Windows)
+
+After `php flarum cache:clear` or enabling/disabling the extension, the very
+first page load may briefly return `HTTP 500` and succeed on refresh. This is a
+known Flarum/Symfony behaviour on **Windows** (the translation-catalogue cache
+is rebuilt and concurrent first requests can collide on the file rename) — it
+affects the whole forum, not just this extension, and clears itself once the
+cache is warm. Loading any one page once after clearing the cache avoids it.
 
 ## Links
 

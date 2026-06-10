@@ -41,10 +41,13 @@ class PageContent
 
     protected function getApiDocument(Request $request, string $slug): object
     {
+        // Resolve via the by-slug route so nested slugs (with slashes) work — the
+        // Show endpoint's {id} segment cannot contain slashes. The response is a
+        // normal single-resource document (incl. rendered contentHtml).
         return json_decode(
             $this->api
                 ->withParentRequest($request)
-                ->get("/advanced-pages/$slug")
+                ->get('/advanced-pages-by-slug/' . $slug)
                 ->getBody()
         );
     }

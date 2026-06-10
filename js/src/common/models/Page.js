@@ -37,12 +37,36 @@ export default class Page extends Model {
     return Model.attribute('isRestricted').call(this);
   }
 
+  allowScripts() {
+    return Model.attribute('allowScripts').call(this);
+  }
+
   metaDescription() {
     return Model.attribute('metaDescription').call(this);
   }
 
   visibleGroups() {
     return Model.attribute('visibleGroups').call(this);
+  }
+
+  parentId() {
+    return Model.attribute('parentId').call(this);
+  }
+
+  position() {
+    return Model.attribute('position').call(this);
+  }
+
+  breadcrumbsCss() {
+    return Model.attribute('breadcrumbsCss').call(this);
+  }
+
+  treeBreadcrumbsCss() {
+    return Model.attribute('treeBreadcrumbsCss').call(this);
+  }
+
+  ancestors() {
+    return Model.attribute('ancestors').call(this) || [];
   }
 
   createdAt() {

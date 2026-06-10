@@ -7,6 +7,74 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-06-10
+
+### Added
+- **Nested / child pages.** Pages can have a parent, forming a tree. The editor
+  has a *Parent Page* selector, the admin list shows the hierarchy as an indented
+  tree, and pages render breadcrumbs from the parent chain. The hierarchy is the
+  organisation (tree / order / breadcrumbs); the slug is the independent URL and
+  may still be a slash path (e.g. `/p/docs/getting-started`).
+- **Drag-and-drop ordering & nesting.** Each admin row has a grip handle (`⋮⋮`)
+  at the end of the Actions column. Drag a page **onto** another to nest it under
+  that page, or **between** rows to reorder — with live drop indicators and
+  animations. Order persists (`position`) per parent. A page can't be dropped
+  into its own subtree.
+- **Per-tree breadcrumb CSS.** On a root page (no parent), tick *Custom
+  breadcrumbs CSS?* to style — or hide (`display:none`) — the breadcrumbs for
+  that whole tree (targets `.AdvancedPages-breadcrumbs`).
+- **Per-content-type creation permissions** — `advancedPages.create.text`,
+  `.bbcode`, `.markdown`, `.html`, `.php` (admins always bypass). The safe
+  types (text / BBCode / Markdown) are toggleable in the admin permission grid;
+  the code/script-capable types (HTML, PHP) are intentionally *not* in the grid.
+- **`php flarum advancedpages:permission` console command** — grant / revoke /
+  list these permissions per group from the CLI. Granting the sensitive
+  `html` / `php` / `all` permissions requires an explicit `--force` flag. This
+  is the only way to delegate HTML/PHP page creation, so it can never be enabled
+  by an accidental click in the admin panel.
+- **Per-page "Allow script execution" toggle.** `<script>` tags embedded in page
+  content now run only when this is enabled (off by default for new pages).
+  Existing HTML/PHP pages are migrated with it enabled so they keep working.
+- **`$actor` now works inside PHP pages** — it is the real current user (a guest
+  object for guests), passed straight from the request rather than always `null`.
+- **PHP pages can handle POST and file uploads.** `/p/{slug}` now also accepts
+  POST, so PHP pages receive `$_POST` / `$_FILES` from forms that submit back to
+  themselves (e.g. contact forms, uploaders). `$_GET` already worked. CSRF stays
+  enforced: forms must submit the session token, exposed to PHP pages as the new
+  `$csrfToken` variable. A live demo ships at `/p/php-request-test`.
+- **`$pages` tree helper in PHP pages** — a read-only, visibility-scoped
+  navigator over the page tree (`->all()`, `->roots()`, `->children()`,
+  `->tree($slug)`, `->find()`, `->ancestors()`) for building nav menus, sidebars
+  or sitemaps without leaking pages the viewer can't see.
+
+### Changed
+- Per-group page visibility now uses Laravel's cross-database
+  `whereJsonContains()` instead of the MySQL-only `JSON_CONTAINS()`, so it works
+  on SQLite 3.38+ and PostgreSQL as well as MySQL/MariaDB.
+- Migrations standardised on `Flarum\Database\Migration` helpers; removed the
+  MySQL-only `->after()` column modifiers.
+- The admin page list now loads every page (previously only the first 20 were
+  shown) and renders from the store.
+- The "Reset extension settings" cancel-button styling is now pure CSS instead
+  of a document-wide `MutationObserver`.
+
+### Fixed
+- **Spoiler permission gating** now works regardless of the *Replace Forum
+  Spoiler* setting and no longer leaks spoiler content that contains nested
+  `<div>`s. The locked-spoiler message is now translatable.
+- Embedded page scripts no longer execute twice; removed the global
+  `DOMContentLoaded` re-dispatch that could disrupt other extensions.
+- `PagePolicy::view()` now enforces per-group visibility, matching the list scope.
+- PHP render errors are logged with the real page id.
+
+### Security
+- HTML and PHP page creation are admin-only by default and can only be delegated
+  through the `advancedpages:permission` console command. HTML is still rendered
+  **raw** by design (see *Security* in the README) — it is not sanitised.
+
+### Removed
+- Dead code: unused `PageValidator`, `PageRepository`, and `FormattedEditor.js`.
+
 ## [2.0.4] - 2026-05-30
 
 ### Added

@@ -7,7 +7,7 @@ use TryHackX\AdvancedPages\Page;
 
 interface RendererInterface
 {
-    public function render(Page $page, ?User $actor = null): string;
+    public function render(Page $page, ?User $actor = null, ?string $csrfToken = null): string;
 
     public function supports(string $contentType): bool;
 }

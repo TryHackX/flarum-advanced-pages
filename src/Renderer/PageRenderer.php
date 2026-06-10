@@ -20,11 +20,11 @@ class PageRenderer
         $this->renderers = [$text, $html, $php, $bbcode, $markdown];
     }
 
-    public function render(Page $page, ?User $actor = null): string
+    public function render(Page $page, ?User $actor = null, ?string $csrfToken = null): string
     {
         foreach ($this->renderers as $renderer) {
             if ($renderer->supports($page->content_type)) {
-                return $renderer->render($page, $actor);
+                return $renderer->render($page, $actor, $csrfToken);
             }
         }
 

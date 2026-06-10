@@ -12,7 +12,7 @@ class TextRenderer implements RendererInterface
         return $contentType === 'text';
     }
 
-    public function render(Page $page, ?User $actor = null): string
+    public function render(Page $page, ?User $actor = null, ?string $csrfToken = null): string
     {
         $escaped = htmlspecialchars($page->content, ENT_QUOTES, 'UTF-8');
         $escaped = nl2br($escaped);

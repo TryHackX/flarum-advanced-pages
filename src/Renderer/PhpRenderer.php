@@ -20,13 +20,13 @@ class PhpRenderer implements RendererInterface
         return $contentType === 'php';
     }
 
-    public function render(Page $page, ?User $actor = null): string
+    public function render(Page $page, ?User $actor = null, ?string $csrfToken = null): string
     {
         ob_start();
 
-        $previousHandler = set_error_handler(function (int $severity, string $message, string $file, int $line) {
+        $previousHandler = set_error_handler(function (int $severity, string $message) use ($page) {
             $this->logger->warning('AdvancedPages PHP render error', [
-                'page_id' => 'N/A',
+                'page_id' => $page->id,
                 'severity' => $severity,
                 'message' => $message,
             ]);
@@ -35,7 +35,7 @@ class PhpRenderer implements RendererInterface
         });
 
         try {
-            $this->executeInSandbox($page);
+            $this->executeInSandbox($page, $actor, $csrfToken);
             $output = ob_get_clean();
         } catch (\Throwable $e) {
             ob_end_clean();
@@ -55,26 +55,28 @@ class PhpRenderer implements RendererInterface
         return '<div class="AdvancedPages-phpContent">' . $output . '</div>';
     }
 
-    protected function executeInSandbox(Page $page): void
+    protected function executeInSandbox(Page $page, ?User $actor, ?string $csrfToken): void
     {
         $__page = $page;
         $__settings = $this->settings;
+        $__actor = $actor;
+        $__csrfToken = $csrfToken;
+        $__pages = new \TryHackX\AdvancedPages\PageTree($actor);
 
-        $__actor = null;
-        try {
-            $request = resolve('flarum.instance')->getRequest();
-            if ($request) {
-                $__actor = $request->getAttribute('actor');
-            }
-        } catch (\Throwable $e) {
-        }
-
-        (function () use ($__page, $__actor, $__settings) {
+        (function () use ($__page, $__actor, $__settings, $__csrfToken, $__pages) {
             $page = $__page;
             $actor = $__actor;
             $settings = $__settings;
+            // CSRF token for the current session. Include it in POST forms that
+            // submit to this page: <input type="hidden" name="csrfToken" value="...">
+            // PHP superglobals ($_GET, $_POST, $_FILES, $_SERVER) are available too.
+            $csrfToken = $__csrfToken;
+            // Read-only navigator over the (visibility-scoped) page tree — handy
+            // for building nav menus. See PageTree: ->all(), ->roots(),
+            // ->children($slug), ->tree($slug), ->find($slug), ->ancestors($page).
+            $pages = $__pages;
 
-            unset($__page, $__actor, $__settings);
+            unset($__page, $__actor, $__settings, $__csrfToken, $__pages);
 
             eval('?>' . $page->content);
         })();

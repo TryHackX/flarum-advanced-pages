@@ -1,18 +1,9 @@
 <?php
 
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Database\Schema\Builder;
+use Flarum\Database\Migration;
 
-return [
-    'up' => function (Builder $schema) {
-        $schema->table('advanced_pages', function (Blueprint $table) {
-            $table->text('visible_groups')->nullable()->after('is_restricted');
-        });
-    },
-
-    'down' => function (Builder $schema) {
-        $schema->table('advanced_pages', function (Blueprint $table) {
-            $table->dropColumn('visible_groups');
-        });
-    },
-];
+// Cross-database column ordering is cosmetic, so no ->after() is used here
+// (it is silently ignored on SQLite/PostgreSQL anyway).
+return Migration::addColumns('advanced_pages', [
+    'visible_groups' => ['text', 'nullable' => true],
+]);

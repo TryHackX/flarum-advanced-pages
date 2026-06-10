@@ -3,6 +3,9 @@ tryhackx-advanced-pages:
     permissions:
       manage_pages_label: Zarządzanie zaawansowanymi stronami
       view_spoilers_label: Wyświetlanie zawartości spoilerów
+      create_text_label: "Tworzenie stron: Zwykły tekst"
+      create_bbcode_label: "Tworzenie stron: BBCode"
+      create_markdown_label: "Tworzenie stron: Markdown"
 
     pages:
       create_button: Utwórz stronę
@@ -19,6 +22,7 @@ tryhackx-advanced-pages:
       restricted: Wymaga logowania
       everyone: Wszyscy
       empty: Nie utworzono jeszcze żadnych stron.
+      drag_hint: "Przeciągnij, aby zmienić kolejność — upuść na stronę, aby zagnieździć"
 
     settings:
       title: Ustawienia BBCode
@@ -35,6 +39,9 @@ tryhackx-advanced-pages:
       create_title: Utwórz stronę
       edit_title: Edytuj stronę
       title_label: Tytuł
+      parent_label: Strona nadrzędna
+      parent_none: "— Brak (najwyższy poziom) —"
+      parent_help: "Opcjonalne. Zagnieźdź tę stronę pod inną, aby zbudować hierarchię (np. /p/docs/getting-started). Wybór rodzica proponuje pasujący slug — nadal możesz go edytować."
       slug_label: Slug URL
       content_type_label: Typ treści
       type_text: Zwykły tekst
@@ -60,6 +67,10 @@ tryhackx-advanced-pages:
       newline_flarum: "Flarum (waniliowy — wiele nowych linii = jeden przerwa)"
       newline_preserve: "Zachowaj (respektuj wszystkie nowe linie)"
       php_warning: "Strony PHP wykonują kod po stronie serwera. Twórz strony PHP tylko jeśli rozumiesz konsekwencje bezpieczeństwa. Błędy są logowane, ale nigdy nie są wyświetlane odwiedzającym."
+      allow_scripts_label: "Zezwól na wykonywanie skryptów na tej stronie"
+      allow_scripts_help: "Domyślnie wyłączone. Po włączeniu skrypty (inline i zewnętrzne) z treści tej strony wykonują się w przeglądarce każdego odwiedzającego. Włączaj tylko dla stron, którym w pełni ufasz."
+      custom_breadcrumbs_css_label: "Własny CSS okruszków (breadcrumbs)?"
+      custom_breadcrumbs_css_help: "Stylizuj (lub ukryj) okruszki dla tej strony i wszystkiego, co pod nią zagnieżdżone. Celuj w .AdvancedPages-breadcrumbs — np. display:none aby je ukryć."
 
     support:
       button: Wesprzyj rozwój
@@ -69,6 +80,8 @@ tryhackx-advanced-pages:
       thanks: Dziękuję za wsparcie!
 
   forum:
+    spoiler:
+      locked: Nie masz uprawnień do wyświetlenia zawartości spoilera.
     page:
       loading: Ładowanie...
       not_found_title: Strona nie znaleziona

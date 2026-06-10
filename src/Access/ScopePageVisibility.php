@@ -31,8 +31,11 @@ class ScopePageVisibility
                     [Group::MEMBER_ID]
                 ));
 
+            // whereJsonContains() resolves to the correct JSON operator for each
+            // supported database driver (MySQL/MariaDB, SQLite 3.38+, PostgreSQL),
+            // unlike the MySQL-only JSON_CONTAINS() function.
             foreach ($groupIds as $groupId) {
-                $query->orWhereRaw('JSON_CONTAINS(visible_groups, ?)', [json_encode((int) $groupId)]);
+                $query->orWhereJsonContains('visible_groups', (int) $groupId);
             }
         });
     }

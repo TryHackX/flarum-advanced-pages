@@ -1,6 +1,7 @@
 import app from 'flarum/forum/app';
 import Page from 'flarum/common/components/Page';
 import LoadingIndicator from 'flarum/common/components/LoadingIndicator';
+import Link from 'flarum/common/components/Link';
 import hljs from 'highlight.js/lib/core';
 import javascript from 'highlight.js/lib/languages/javascript';
 import php from 'highlight.js/lib/languages/php';
@@ -49,10 +50,17 @@ export default class PageView extends Page {
       return;
     }
 
-    app.store
-      .find('advanced-pages', slug)
-      .then((page) => {
-        this.page = page;
+    // store.find() addresses resources as /advanced-pages/{id} and so can't carry
+    // a nested (slash-containing) slug. Resolve through the by-slug endpoint and
+    // push the returned document into the store ourselves. Slugs only contain
+    // [a-z0-9-/], so the path needs no encoding (which would mangle the slashes).
+    app
+      .request({
+        method: 'GET',
+        url: app.forum.attribute('apiUrl') + '/advanced-pages-by-slug/' + slug,
+      })
+      .then((payload) => {
+        this.page = app.store.pushPayload(payload);
         this.loading = false;
         this.updateTitle();
         m.redraw();
@@ -80,18 +88,23 @@ export default class PageView extends Page {
   oncreate(vnode) {
     super.oncreate(vnode);
     this.highlightCode(vnode.dom);
-    if (this.page && !this.loading) {
-      this.activateScripts(vnode.dom);
-    }
+    this.maybeActivateScripts(vnode.dom);
   }
 
   onupdate(vnode) {
     super.onupdate(vnode);
     this.highlightCode(vnode.dom);
-    if (this.page && !this.loading && !this._scriptsActivated) {
-      this._scriptsActivated = true;
-      this.activateScripts(vnode.dom);
-    }
+    this.maybeActivateScripts(vnode.dom);
+  }
+
+  // Runs activateScripts at most once per loaded page, whether the page arrives
+  // via oncreate (server-preloaded) or a later onupdate (client-side fetch).
+  // Script execution is opt-in per page (allowScripts) — see activateScripts.
+  maybeActivateScripts(dom) {
+    if (this._scriptsActivated || !this.page || this.loading) return;
+    if (!this.page.allowScripts()) return;
+    this._scriptsActivated = true;
+    this.activateScripts(dom);
   }
 
   highlightCode(dom) {
@@ -103,6 +116,11 @@ export default class PageView extends Page {
     });
   }
 
+  // Executes <script> tags embedded in page content. Only ever called for pages
+  // with allowScripts() === true (gated in maybeActivateScripts), which in turn
+  // can only be set on html/php pages whose creation required the sensitive
+  // permission. Browsers do not run scripts inserted via innerHTML, so we clone
+  // each tag into a fresh element to opt back into execution.
   activateScripts(dom) {
     if (!dom) return;
     const container = dom.querySelector('.AdvancedPages-content');
@@ -136,10 +154,6 @@ export default class PageView extends Page {
         newScript.textContent = oldScript.textContent;
         oldScript.parentNode.replaceChild(newScript, oldScript);
       });
-
-      if (document.readyState !== 'loading') {
-        document.dispatchEvent(new Event('DOMContentLoaded'));
-      }
     });
   }
 
@@ -176,6 +190,8 @@ export default class PageView extends Page {
         {this.hero()}
         <div className="Page-main">
           <div className="container">
+            {this.treeStyle()}
+            {this.breadcrumbs()}
             <div className="AdvancedPages-content">
               {m.trust(this.page.contentHtml())}
             </div>
@@ -183,6 +199,45 @@ export default class PageView extends Page {
         </div>
       </div>
     );
+  }
+
+  // Build breadcrumbs from the parent chain: each ancestor links to its own
+  // page, the last crumb is the current page's title. Only shown when the page
+  // has a parent. The ancestor data comes from the API (resolved server-side).
+  breadcrumbs() {
+    if (!this.page) return null;
+
+    const ancestors = this.page.ancestors();
+    if (!ancestors.length) return null;
+
+    const items = [];
+
+    ancestors.forEach((ancestor, index) => {
+      if (index > 0) {
+        items.push(<span className="AdvancedPages-breadcrumbSep">/</span>);
+      }
+      items.push(
+        <Link className="AdvancedPages-breadcrumbLink" href={'/p/' + ancestor.slug}>
+          {ancestor.title}
+        </Link>
+      );
+    });
+
+    items.push(<span className="AdvancedPages-breadcrumbSep">/</span>);
+    items.push(<span className="AdvancedPages-breadcrumbCurrent">{this.page.title()}</span>);
+
+    return <nav className="AdvancedPages-breadcrumbs">{items}</nav>;
+  }
+
+  // Per-tree breadcrumb CSS (set on the tree's root page). Rendered as a <style>
+  // element whose text content is the author's CSS — set as a text node, so a
+  // stray "</style>" is inert text, not a tag break. Lets a tree restyle or hide
+  // (display:none) its breadcrumbs.
+  treeStyle() {
+    const css = this.page && this.page.treeBreadcrumbsCss();
+    if (!css) return null;
+
+    return <style className="AdvancedPages-treeStyle">{css}</style>;
   }
 
   hero() {

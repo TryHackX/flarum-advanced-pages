@@ -1,17 +1,7 @@
 <?php
 
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Database\Schema\Builder;
+use Flarum\Database\Migration;
 
-return [
-    'up' => function (Builder $schema) {
-        $schema->table('advanced_pages', function (Blueprint $table) {
-            $table->string('newline_mode', 20)->default('flarum')->after('content_type');
-        });
-    },
-    'down' => function (Builder $schema) {
-        $schema->table('advanced_pages', function (Blueprint $table) {
-            $table->dropColumn('newline_mode');
-        });
-    },
-];
+return Migration::addColumns('advanced_pages', [
+    'newline_mode' => ['string', 'length' => 20, 'default' => 'flarum'],
+]);

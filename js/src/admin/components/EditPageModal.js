@@ -64,24 +64,18 @@ export default class EditPageModal extends FormModal {
     this.pageMetaDescription = Stream(this.page.metaDescription() || '');
     this.pageVisibleGroups = Stream(this.page.visibleGroups() || []);
     this.pageNewlineMode = Stream(this.page.newlineMode() || 'flarum');
+    this.pageAllowScripts = Stream(this.page.allowScripts() !== undefined ? this.page.allowScripts() : false);
+    this.pageParentId = Stream(this.page.parentId() || null);
+    this.pageBreadcrumbsCss = Stream(this.page.breadcrumbsCss() || '');
+    this.customBreadcrumbsCss = Stream(!!this.page.breadcrumbsCss());
 
     this.showPreview = false;
     this.saved = false;
 
-    this.initialData = JSON.stringify({
-      title: this.pageTitle(),
-      content: this.pageContent(),
-      slug: this.pageSlug(),
-      contentType: this.pageContentType(),
-      isPublished: this.pageIsPublished(),
-      isHidden: this.pageIsHidden(),
-      isRestricted: this.pageIsRestricted(),
-      metaDescription: this.pageMetaDescription(),
-      newlineMode: this.pageNewlineMode(),
-    });
+    this.initialData = this.snapshot();
   }
 
-  hasUnsavedChanges() {
+  snapshot() {
     return JSON.stringify({
       title: this.pageTitle(),
       content: this.pageContent(),
@@ -90,9 +84,16 @@ export default class EditPageModal extends FormModal {
       isPublished: this.pageIsPublished(),
       isHidden: this.pageIsHidden(),
       isRestricted: this.pageIsRestricted(),
+      allowScripts: this.pageAllowScripts(),
       metaDescription: this.pageMetaDescription(),
       newlineMode: this.pageNewlineMode(),
-    }) !== this.initialData;
+      parentId: this.pageParentId(),
+      breadcrumbsCss: this.customBreadcrumbsCss() ? this.pageBreadcrumbsCss() : '',
+    });
+  }
+
+  hasUnsavedChanges() {
+    return this.snapshot() !== this.initialData;
   }
 
   hide() {
@@ -211,7 +212,7 @@ export default class EditPageModal extends FormModal {
           oninput={(e) => {
             this.pageTitle(e.target.value);
             if (!this.page.exists) {
-              this.pageSlug(slugify(e.target.value));
+              this.pageSlug(this.composeSlug(slugify(e.target.value)));
             }
           }}
         />
@@ -231,6 +232,59 @@ export default class EditPageModal extends FormModal {
       </div>,
       90
     );
+
+    items.add(
+      'parent',
+      <div className="Form-group">
+        <label>{app.translator.trans('tryhackx-advanced-pages.admin.edit_page.parent_label')}</label>
+        <select
+          className="FormControl"
+          value={this.pageParentId() || ''}
+          onchange={(e) => this.onParentChange(e.target.value)}
+        >
+          <option value="">{app.translator.trans('tryhackx-advanced-pages.admin.edit_page.parent_none')}</option>
+          {this.parentOptions().map((p) => (
+            // No key: this <option> list shares a parent with the unkeyed "none"
+            // option above, and Mithril forbids mixing keyed and unkeyed siblings.
+            <option value={p.id()}>
+              {p.title()} (/p/{p.slug()})
+            </option>
+          ))}
+        </select>
+        <p className="helpText">{app.translator.trans('tryhackx-advanced-pages.admin.edit_page.parent_help')}</p>
+      </div>,
+      85
+    );
+
+    // Per-tree breadcrumb CSS — only meaningful on a root page (no parent), since
+    // it applies to the whole tree below it.
+    if (!this.pageParentId()) {
+      items.add(
+        'breadcrumbsCss',
+        <div className="Form-group">
+          <label className="checkbox">
+            <input
+              type="checkbox"
+              checked={this.customBreadcrumbsCss()}
+              onchange={(e) => this.customBreadcrumbsCss(e.target.checked)}
+            />
+            {app.translator.trans('tryhackx-advanced-pages.admin.edit_page.custom_breadcrumbs_css_label')}
+          </label>
+          <p className="helpText">{app.translator.trans('tryhackx-advanced-pages.admin.edit_page.custom_breadcrumbs_css_help')}</p>
+          {this.customBreadcrumbsCss() && (
+            <textarea
+              className="FormControl AdvancedPages-cssEditor"
+              rows="6"
+              spellcheck="false"
+              placeholder={'.AdvancedPages-breadcrumbs {\n  /* your styles, or display: none to hide */\n}'}
+              value={this.pageBreadcrumbsCss()}
+              oninput={(e) => this.pageBreadcrumbsCss(e.target.value)}
+            />
+          )}
+        </div>,
+        84
+      );
+    }
 
     items.add(
       'contentType',
@@ -263,6 +317,24 @@ export default class EditPageModal extends FormModal {
           </div>
         </div>,
         75
+      );
+    }
+
+    if (contentType === 'html' || contentType === 'php') {
+      items.add(
+        'allowScripts',
+        <div className="Form-group">
+          <label className="checkbox">
+            <input
+              type="checkbox"
+              checked={this.pageAllowScripts()}
+              onchange={(e) => this.pageAllowScripts(e.target.checked)}
+            />
+            {app.translator.trans('tryhackx-advanced-pages.admin.edit_page.allow_scripts_label')}
+          </label>
+          <p className="helpText">{app.translator.trans('tryhackx-advanced-pages.admin.edit_page.allow_scripts_help')}</p>
+        </div>,
+        74
       );
     }
 
@@ -388,6 +460,63 @@ export default class EditPageModal extends FormModal {
     );
 
     return items;
+  }
+
+  // Candidate parents: every page except this one and its own descendants
+  // (which would create a cycle), sorted by slug so the list reads as a tree.
+  parentOptions() {
+    const pages = this.attrs.pages || [];
+    const selfId = this.page.exists ? Number(this.page.id()) : null;
+
+    return pages
+      .filter((p) => {
+        if (selfId === null) return true;
+        if (Number(p.id()) === selfId) return false;
+        return !this.isDescendantOf(p, selfId);
+      })
+      .sort((a, b) => (a.slug() || '').localeCompare(b.slug() || ''));
+  }
+
+  isDescendantOf(page, ancestorId) {
+    const pages = this.attrs.pages || [];
+    let parentId = page.parentId();
+    const seen = {};
+
+    while (parentId) {
+      if (Number(parentId) === Number(ancestorId)) return true;
+      if (seen[parentId]) break;
+      seen[parentId] = true;
+      const parent = pages.find((p) => Number(p.id()) === Number(parentId));
+      if (!parent) break;
+      parentId = parent.parentId();
+    }
+
+    return false;
+  }
+
+  onParentChange(value) {
+    this.pageParentId(value ? Number(value) : null);
+
+    // Convenience: for a new page, re-derive the slug under the chosen parent.
+    if (!this.page.exists) {
+      const base = this.lastSegment(this.pageSlug()) || slugify(this.pageTitle());
+      this.pageSlug(this.composeSlug(base));
+    }
+  }
+
+  // Prefix a slug segment with the selected parent's full slug, e.g. base
+  // "buying" under parent "docs/getting-started" -> "docs/getting-started/buying".
+  composeSlug(base) {
+    const parentId = this.pageParentId();
+    if (!parentId) return base;
+
+    const parent = (this.attrs.pages || []).find((p) => Number(p.id()) === Number(parentId));
+    return parent && parent.slug() ? parent.slug() + '/' + base : base;
+  }
+
+  lastSegment(slug) {
+    const parts = (slug || '').split('/').filter(Boolean);
+    return parts[parts.length - 1] || '';
   }
 
   buildEditorField(contentType) {
@@ -555,9 +684,15 @@ export default class EditPageModal extends FormModal {
       isPublished: this.pageIsPublished(),
       isHidden: this.pageIsHidden(),
       isRestricted: this.pageIsRestricted(),
+      allowScripts: this.pageAllowScripts(),
       metaDescription: this.pageMetaDescription(),
       visibleGroups: this.pageVisibleGroups().length > 0 ? this.pageVisibleGroups() : null,
       newlineMode: this.pageNewlineMode(),
+      parentId: this.pageParentId() || null,
+      breadcrumbsCss:
+        !this.pageParentId() && this.customBreadcrumbsCss() && this.pageBreadcrumbsCss().trim()
+          ? this.pageBreadcrumbsCss()
+          : null,
     };
   }
 

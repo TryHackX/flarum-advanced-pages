@@ -12,7 +12,7 @@ class HtmlRenderer implements RendererInterface
         return $contentType === 'html';
     }
 
-    public function render(Page $page, ?User $actor = null): string
+    public function render(Page $page, ?User $actor = null, ?string $csrfToken = null): string
     {
         return '<div class="AdvancedPages-htmlContent">' . $page->content . '</div>';
     }
