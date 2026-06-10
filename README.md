@@ -387,9 +387,15 @@ delegating page creation:
 - **Safe by default:** out of the box only administrators can create or edit
   pages. HTML and PHP creation can only be delegated via the
   `advancedpages:permission` console command (never an accidental panel click).
-- `<script>` execution is **opt-in per page** (off by default).
-- The raw `content` field is hidden from non-admin API responses (only the
-  rendered output is exposed).
+- The per-page *Allow script execution* toggle gates `<script>` tags (off by
+  default). It is **not** a sandbox: HTML is rendered raw, so a page can still run
+  JavaScript by other means (inline event-handler attributes like `onerror`,
+  `<svg onload>`, etc.) regardless of the toggle. Treat anyone allowed to create
+  HTML pages as able to run JS in every visitor's browser, toggle or not — the
+  toggle is a convenience for disabling `<script>` blocks, not a trust boundary.
+- The raw `content` field is exposed only to admins and holders of
+  `advancedPages.manage` (so page managers can edit without blanking it); everyone
+  else gets only the rendered output.
 - Spoiler content is stripped server-side for users without
   `advancedPages.viewSpoilers`, regardless of the *Replace Forum Spoiler* setting.
 - URL-scheme blocking (`javascript:`, `data:`, `vbscript:`) in the extended

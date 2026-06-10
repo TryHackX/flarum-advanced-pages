@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Render cache for Markdown and BBCode pages.** The expensive s9e
+  parse+render step is now memoised in Flarum's file cache. Cache keys derive
+  from the page content, so editing a page produces a fresh render
+  automatically, and `php flarum cache:clear` (already required after changing
+  BBCode/formatter settings) wipes the entries. PHP pages are never cached
+  (their output is request-dependent); the actor-dependent spoiler gating and
+  the `[url]` post-processing still run per request, outside the cache.
+
+### Changed
+- The raw `content` field is now also exposed to holders of
+  `advancedPages.manage` (page managers), not only administrators — so an
+  API-driven edit can read the current content instead of unintentionally
+  blanking it. Everyone else still receives only the rendered output.
+- The *Allow script execution* help text and the README *Security* section now
+  state plainly that the toggle gates `<script>` tags only and is **not** a
+  sandbox: raw HTML can still run JavaScript via other vectors (inline
+  event-handler attributes such as `onerror`), so HTML-page creators should be
+  treated as able to run JS regardless of the toggle.
+
+### Fixed
+- **Nested spoilers no longer leak.** `hideSpoilerContent()` now finds the
+  matching close of each outermost spoiler with a depth-aware scan instead of a
+  non-greedy regex, which previously stopped at the first `</details>` and
+  leaked the remainder of an outer spoiler that contained a nested one (and
+  produced malformed markup). Non-spoiler HTML is left byte-for-byte untouched.
+- A page whose slug is all digits (e.g. `2024`) is now reachable through the
+  Show endpoint: `find()` falls back to a slug lookup when no page has that id.
+- The editor's `<select>` menus (Parent Page, Content Type, Newline Mode) no
+  longer clip the descenders of letters — Flarum's fixed `.FormControl`
+  `height: 36px` is relaxed to `height: auto` (with a `min-height`) for selects
+  inside the modal.
+
+### Chore
+- Deduplicated `.gitignore` (doubled `vendor/` and `node_modules/`, redundant
+  `.DS_Store`, and the self-referential `.gitignore` entry that kept the file
+  itself untracked).
+
 ## [2.1.0] - 2026-06-10
 
 ### Added

@@ -68,7 +68,7 @@ tryhackx-advanced-pages:
       newline_preserve: "Zachowaj (respektuj wszystkie nowe linie)"
       php_warning: "Strony PHP wykonują kod po stronie serwera. Twórz strony PHP tylko jeśli rozumiesz konsekwencje bezpieczeństwa. Błędy są logowane, ale nigdy nie są wyświetlane odwiedzającym."
       allow_scripts_label: "Zezwól na wykonywanie skryptów na tej stronie"
-      allow_scripts_help: "Domyślnie wyłączone. Po włączeniu skrypty (inline i zewnętrzne) z treści tej strony wykonują się w przeglądarce każdego odwiedzającego. Włączaj tylko dla stron, którym w pełni ufasz."
+      allow_scripts_help: "Bramkuje znaczniki script na tej stronie (domyślnie wyłączone): wyłączone — nie wykonują się, włączone — skrypty inline i zewnętrzne działają w przeglądarce każdego odwiedzającego. To NIE jest piaskownica — surowy HTML i tak może uruchomić JavaScript w inny sposób (np. atrybuty zdarzeń inline jak onerror), więc publikuj tylko strony HTML/PHP, którym w pełni ufasz."
       custom_breadcrumbs_css_label: "Własny CSS okruszków (breadcrumbs)?"
       custom_breadcrumbs_css_help: "Stylizuj (lub ukryj) okruszki dla tej strony i wszystkiego, co pod nią zagnieżdżone. Celuj w .AdvancedPages-breadcrumbs — np. display:none aby je ukryć."
 

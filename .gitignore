@@ -1,0 +1,17 @@
+# Dependencies
+/vendor/
+/node_modules/
+/js/node_modules/
+composer.lock
+
+# Editor / OS
+/.idea/
+/.vscode/
+/.claude/
+.DS_Store
+Thumbs.db
+*.log
+
+# Local-only publish helper (not part of the package)
+PUBLISH.md
+PUBLISHING.md

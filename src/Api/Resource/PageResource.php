@@ -57,7 +57,12 @@ class PageResource extends AbstractDatabaseResource
     public function find(string $id, Context $context): ?object
     {
         if (is_numeric($id)) {
-            return $this->query($context)->find($id);
+            // Treat a numeric value as an id first, but the slug regex also allows
+            // all-digit slugs (e.g. "2024"), so fall back to a slug lookup when no
+            // page has that id — otherwise such pages are unaddressable by the Show
+            // endpoint.
+            return $this->query($context)->find($id)
+                ?? $this->query($context)->where('slug', $id)->first();
         }
 
         return $this->query($context)->where('slug', $id)->first();
@@ -98,10 +103,16 @@ class PageResource extends AbstractDatabaseResource
                 ->regex(self::SLUG_REGEX)
                 ->maxLength(200),
 
+            // Raw source is exposed only to those who may edit pages: admins, or
+            // holders of advancedPages.manage (page managers). Everyone else gets
+            // only the rendered contentHtml. Managers need the raw content so an
+            // edit (which resubmits every writable field) doesn't blank it.
             Schema\Str::make('content')
                 ->requiredOnCreate()
                 ->writable()
-                ->visible(fn ($page, FlarumContext $context) => $context->getActor()->isAdmin()),
+                ->visible(fn ($page, FlarumContext $context) =>
+                    $context->getActor()->isAdmin()
+                    || $context->getActor()->hasPermission('advancedPages.manage')),
 
             Schema\Str::make('contentType')
                 ->requiredOnCreate()

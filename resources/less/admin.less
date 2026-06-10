@@ -282,6 +282,18 @@
   }
 }
 
+// Flarum's .FormControl forces a fixed height: 36px. On <select> menus that
+// content box is too short for the line, clipping the descenders of letters
+// (the tails of "g"/"p"/"y" in e.g. the Parent Page options). Let the selects
+// grow to fit their text instead, keeping the same minimum height.
+.EditPageModal select.FormControl {
+  height: auto;
+  min-height: 36px;
+  line-height: 1.4;
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
 .AdvancedPages-visibilityGroup {
   display: flex;
   gap: 20px;
