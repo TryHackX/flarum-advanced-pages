@@ -88,7 +88,7 @@ You can also find the donation option in the extension's admin settings panel.
 ## Requirements
 
 - **Flarum** `^2.0`
-- **PHP** `^8.1`
+- **PHP** `^8.2`
 - **PHP memory_limit** `256M` minimum (512M+ recommended — see *Memory* below).
 
 ## Installation

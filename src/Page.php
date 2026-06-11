@@ -45,6 +45,9 @@ class Page extends AbstractModel
         'position' => 'integer',
     ];
 
+    /** Memoised root→parent chain shared by ancestors() and rootPage(). */
+    protected ?array $ancestorChainCache = null;
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
@@ -73,6 +76,34 @@ class Page extends AbstractModel
      */
     public function ancestors(): array
     {
+        return $this->ancestorChain();
+    }
+
+    /**
+     * The top-most page of this page's tree (this page itself if it is a root).
+     * Cycle-safe.
+     */
+    public function rootPage(): Page
+    {
+        $chain = $this->ancestorChain();
+
+        return $chain[0] ?? $this;
+    }
+
+    /**
+     * Walk the parent chain once (root → immediate parent, excludes self) and
+     * memoise it, so a single request that reads both ancestors() and
+     * rootPage() shares one traversal instead of re-querying every level twice.
+     * Cycle-safe: stops as soon as a parent has already been seen.
+     *
+     * @return Page[]
+     */
+    protected function ancestorChain(): array
+    {
+        if ($this->ancestorChainCache !== null) {
+            return $this->ancestorChainCache;
+        }
+
         $chain = [];
         $seen = [$this->id => true];
         $parent = $this->parent;
@@ -83,23 +114,6 @@ class Page extends AbstractModel
             $parent = $parent->parent;
         }
 
-        return $chain;
-    }
-
-    /**
-     * The top-most page of this page's tree (this page itself if it is a root).
-     * Cycle-safe.
-     */
-    public function rootPage(): Page
-    {
-        $node = $this;
-        $seen = [$this->id => true];
-
-        while ($node->parent && ! isset($seen[$node->parent->id])) {
-            $seen[$node->parent->id] = true;
-            $node = $node->parent;
-        }
-
-        return $node;
+        return $this->ancestorChainCache = $chain;
     }
 }

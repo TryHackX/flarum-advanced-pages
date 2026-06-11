@@ -7,6 +7,7 @@ use Flarum\Api\Endpoint;
 use Flarum\Api\Resource\AbstractDatabaseResource;
 use Flarum\Api\Schema;
 use Flarum\Api\Sort\SortColumn;
+use Flarum\Foundation\ValidationException;
 use Flarum\User\Exception\PermissionDeniedException;
 use Flarum\User\User;
 use Illuminate\Database\Eloquent\Builder;
@@ -290,7 +291,9 @@ class PageResource extends AbstractDatabaseResource
 
         while ($ancestorId) {
             if ($selfId && $ancestorId === $selfId) {
-                throw new PermissionDeniedException('A page cannot be its own parent or descendant.');
+                // A cycle is invalid input, not an authorisation failure — surface
+                // it as a 422 on the parentId field, not a misleading 403.
+                throw new ValidationException(['parentId' => 'A page cannot be its own parent or descendant.']);
             }
 
             if (isset($seen[$ancestorId])) {

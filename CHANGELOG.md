@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.3] - 2026-06-12
+
+### Changed
+- **Ancestor chain is now walked once per request and memoised.** A nested
+  page's breadcrumbs read both its ancestor list (`ancestors()`) and its tree
+  root (`rootPage()`); these previously triggered two independent parent-chain
+  walks, each lazy-loading every level — an extra query per level, doubled. The
+  chain is now traversed a single time and cached on the model, so a page N
+  levels deep no longer issues ~2N parent queries on every single-page view.
+  Behaviour is unchanged: the full chain is still followed regardless of
+  per-page visibility, so breadcrumbs render identically.
+
+### Fixed
+- **Parent-cycle rejection now returns a 422 validation error, not a 403.**
+  Assigning a parent that would make a page its own ancestor is invalid input,
+  not a permission failure. It now raises a `ValidationException` pointing at the
+  `parentId` field (`/data/attributes/parentId`) instead of a
+  `PermissionDeniedException`, so API clients and the admin UI receive a correct,
+  field-level error message.
+- README *Requirements* now states PHP `^8.2`, matching `composer.json` (it was
+  an outdated `^8.1`).
+
+## [2.1.2] - 2026-06-11
+
+### Changed
+- `composer.json` metadata: expanded the description and keywords (nested pages,
+  breadcrumbs, permissions), raised the PHP floor to `^8.2`, pinned
+  `flarum/core` to `^2.0.0-rc.1`, and normalised the extension icon colour. No
+  runtime behaviour change.
+
+### Chore
+- Removed `.editorconfig` and tidied `.gitignore`.
+
+## [2.1.1] - 2026-06-10
+
 ### Added
 - **Render cache for Markdown and BBCode pages.** The expensive s9e
   parse+render step is now memoised in Flarum's file cache. Cache keys derive
