@@ -4,6 +4,7 @@ namespace TryHackX\AdvancedPages\Api\Resource;
 
 use Flarum\Api\Context as FlarumContext;
 use Flarum\Api\Endpoint;
+use Flarum\Api\JsonApi;
 use Flarum\Api\Resource\AbstractDatabaseResource;
 use Flarum\Api\Schema;
 use Flarum\Api\Sort\SortColumn;
@@ -39,6 +40,22 @@ class PageResource extends AbstractDatabaseResource
      * console command — never the admin permission grid).
      */
     public const SENSITIVE_TYPES = ['html', 'php'];
+
+    protected PageRenderer $pageRenderer;
+
+    /**
+     * Resolve the page renderer once when the resource boots — the same way the
+     * framework injects events/validation (see the Bootable concern) — rather
+     * than calling the global resolve() helper inside the contentHtml getter on
+     * every single-page request.
+     */
+    public function boot(JsonApi $api): static
+    {
+        parent::boot($api);
+        $this->pageRenderer = $api->getContainer()->make(PageRenderer::class);
+
+        return $this;
+    }
 
     public function type(): string
     {
@@ -135,7 +152,7 @@ class PageResource extends AbstractDatabaseResource
                     $session = $context->request->getAttribute('session');
                     $csrfToken = $session ? $session->token() : null;
 
-                    return resolve(PageRenderer::class)->render($page, $context->getActor(), $csrfToken);
+                    return $this->pageRenderer->render($page, $context->getActor(), $csrfToken);
                 }),
 
             Schema\Str::make('newlineMode')

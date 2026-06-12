@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.4] - 2026-06-12
+
+### Changed
+- `PageResource` now resolves the `PageRenderer` once when the resource boots —
+  via the framework's `boot()`/container, the same way it injects events and
+  validation (the `Bootable` concern) — instead of calling the global `resolve()`
+  helper inside the `contentHtml` getter on every single-page request. Purely an
+  internal dependency-resolution cleanup; no behaviour change, no migrations, no
+  JS changes.
+
 ## [2.1.3] - 2026-06-12
 
 ### Changed
