@@ -80,29 +80,7 @@ class BbcodeRenderer implements RendererInterface
         }
 
         if ($this->settings->get('tryhackx-advanced-pages.bbcode_url', false)) {
-            $html = preg_replace_callback(
-                '#\[url=(.*?)\](.*?)\[/url\]#i',
-                function ($matches) {
-                    $url = htmlspecialchars($matches[1], ENT_QUOTES, 'UTF-8');
-                    $text = $matches[2];
-                    if (preg_match('#^(javascript|data|vbscript):#i', $matches[1])) {
-                        return $matches[0];
-                    }
-                    return '<a href="' . $url . '" rel="nofollow ugc noopener">' . $text . '</a>';
-                },
-                $html
-            );
-            $html = preg_replace_callback(
-                '#\[url\](.*?)\[/url\]#i',
-                function ($matches) {
-                    $url = htmlspecialchars($matches[1], ENT_QUOTES, 'UTF-8');
-                    if (preg_match('#^(javascript|data|vbscript):#i', $matches[1])) {
-                        return $matches[0];
-                    }
-                    return '<a href="' . $url . '" rel="nofollow ugc noopener">' . $url . '</a>';
-                },
-                $html
-            );
+            $html = $this->linkifyBareUrlTags($html);
         }
 
         if (!$actor || !$actor->hasPermission('advancedPages.viewSpoilers')) {
@@ -110,6 +88,59 @@ class BbcodeRenderer implements RendererInterface
         }
 
         return '<div class="AdvancedPages-bbcodeContent">' . $html . '</div>';
+    }
+
+    /**
+     * Render any [url] tags that s9e left as literal text (e.g. a URL it would
+     * not parse) into links — the "extended URL parser" the bbcode_url setting
+     * advertises. Code is exempt: a literal [url] inside a <pre>/<code> block is
+     * sample text the author wants shown verbatim, so those regions are shielded
+     * before the regexes run and restored afterwards. Dangerous schemes
+     * (javascript:, data:, vbscript:) are left untouched.
+     */
+    protected function linkifyBareUrlTags(string $html): string
+    {
+        $shielded = [];
+        $shield = function (array $m) use (&$shielded) {
+            $token = "\x00APCODE" . count($shielded) . "\x00";
+            $shielded[$token] = $m[0];
+
+            return $token;
+        };
+        // Shield block code first (its inner <code> goes with it), then any
+        // remaining inline <code>.
+        $html = preg_replace_callback('#<pre\b[^>]*>.*?</pre>#is', $shield, $html);
+        $html = preg_replace_callback('#<code\b[^>]*>.*?</code>#is', $shield, $html);
+
+        $html = preg_replace_callback(
+            '#\[url=(.*?)\](.*?)\[/url\]#i',
+            function ($matches) {
+                $url = htmlspecialchars($matches[1], ENT_QUOTES, 'UTF-8');
+                $text = $matches[2];
+                if (preg_match('#^(javascript|data|vbscript):#i', $matches[1])) {
+                    return $matches[0];
+                }
+                return '<a href="' . $url . '" rel="nofollow ugc noopener">' . $text . '</a>';
+            },
+            $html
+        );
+        $html = preg_replace_callback(
+            '#\[url\](.*?)\[/url\]#i',
+            function ($matches) {
+                $url = htmlspecialchars($matches[1], ENT_QUOTES, 'UTF-8');
+                if (preg_match('#^(javascript|data|vbscript):#i', $matches[1])) {
+                    return $matches[0];
+                }
+                return '<a href="' . $url . '" rel="nofollow ugc noopener">' . $url . '</a>';
+            },
+            $html
+        );
+
+        if ($shielded) {
+            $html = strtr($html, $shielded);
+        }
+
+        return $html;
     }
 
     protected function hideSpoilerContent(string $html): string

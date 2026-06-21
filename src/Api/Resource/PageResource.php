@@ -136,7 +136,7 @@ class PageResource extends AbstractDatabaseResource
                 ->requiredOnCreate()
                 ->writable()
                 ->property('content_type')
-                ->in(['html', 'php', 'text', 'bbcode', 'markdown']),
+                ->in(self::CONTENT_TYPES),
 
             Schema\Str::make('contentHtml')
                 ->get(function (Page $page, FlarumContext $context) {
@@ -302,7 +302,20 @@ class PageResource extends AbstractDatabaseResource
             return;
         }
 
+        // Only the parent_id assignment can introduce a cycle. When editing an
+        // existing page without touching its parent (e.g. a content edit), there
+        // is nothing to check — skip the lookups entirely. New models report
+        // every attribute dirty, so creates are always checked.
+        if ($model->exists && ! $model->isDirty('parent_id')) {
+            return;
+        }
+
         $selfId = (int) $model->id;
+
+        // Pre-fetch the whole (id => parent_id) forest in one query and walk it
+        // in memory, instead of issuing one SELECT per ancestor level.
+        $parentOf = Page::query()->pluck('parent_id', 'id')->all();
+
         $ancestorId = (int) $model->parent_id;
         $seen = [];
 
@@ -318,11 +331,11 @@ class PageResource extends AbstractDatabaseResource
             }
             $seen[$ancestorId] = true;
 
-            $parent = Page::find($ancestorId);
-            if (! $parent) {
+            $next = $parentOf[$ancestorId] ?? null;
+            if ($next === null) {
                 break;
             }
-            $ancestorId = (int) $parent->parent_id;
+            $ancestorId = (int) $next;
         }
     }
 

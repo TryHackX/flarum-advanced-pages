@@ -24,7 +24,7 @@ class PhpRenderer implements RendererInterface
     {
         ob_start();
 
-        $previousHandler = set_error_handler(function (int $severity, string $message) use ($page) {
+        set_error_handler(function (int $severity, string $message) use ($page) {
             $this->logger->warning('AdvancedPages PHP render error', [
                 'page_id' => $page->id,
                 'severity' => $severity,
@@ -49,7 +49,7 @@ class PhpRenderer implements RendererInterface
                 . htmlspecialchars($this->getErrorMessage(), ENT_QUOTES, 'UTF-8')
                 . '</div>';
         } finally {
-            set_error_handler($previousHandler);
+            restore_error_handler();
         }
 
         return '<div class="AdvancedPages-phpContent">' . $output . '</div>';

@@ -91,10 +91,18 @@ class Page extends AbstractModel
     }
 
     /**
-     * Walk the parent chain once (root → immediate parent, excludes self) and
-     * memoise it, so a single request that reads both ancestors() and
-     * rootPage() shares one traversal instead of re-querying every level twice.
-     * Cycle-safe: stops as soon as a parent has already been seen.
+     * Resolve the parent chain once (root → immediate parent, excludes self) and
+     * memoise it, so a single request that reads both ancestors() and rootPage()
+     * shares one resolution.
+     *
+     * Instead of lazily following $parent->parent one SELECT per level (an N+1
+     * that grows with nesting depth), this reads the whole (id → parent_id)
+     * forest in a single lightweight query and walks it in memory to find the
+     * ordered ancestor ids, then hydrates just those rows in one more query —
+     * two queries total regardless of depth. Pure query-builder, so it stays
+     * cross-database (MySQL/MariaDB, SQLite, PostgreSQL).
+     *
+     * Cycle-safe: stops as soon as an id has already been seen.
      *
      * @return Page[]
      */
@@ -104,14 +112,42 @@ class Page extends AbstractModel
             return $this->ancestorChainCache;
         }
 
-        $chain = [];
-        $seen = [$this->id => true];
-        $parent = $this->parent;
+        // Root page (no parent): empty chain, no queries.
+        if ($this->parent_id === null) {
+            return $this->ancestorChainCache = [];
+        }
 
-        while ($parent && ! isset($seen[$parent->id])) {
-            $seen[$parent->id] = true;
-            array_unshift($chain, $parent);
-            $parent = $parent->parent;
+        // One query for the whole forest as id => parent_id.
+        $parentOf = static::query()->pluck('parent_id', 'id')->all();
+
+        // Walk parents in memory, root-first, stopping on any repeat (cycle-safe).
+        $ids = [];
+        $seen = [(int) $this->id => true];
+        $cursor = (int) $this->parent_id;
+
+        while (! isset($seen[$cursor])) {
+            $seen[$cursor] = true;
+            array_unshift($ids, $cursor);
+
+            $next = $parentOf[$cursor] ?? null;
+            if ($next === null) {
+                break;
+            }
+            $cursor = (int) $next;
+        }
+
+        if (! $ids) {
+            return $this->ancestorChainCache = [];
+        }
+
+        // One query to hydrate the ancestor rows, then restore root → parent order.
+        $byId = static::query()->findMany($ids)->keyBy('id');
+
+        $chain = [];
+        foreach ($ids as $id) {
+            if (isset($byId[$id])) {
+                $chain[] = $byId[$id];
+            }
         }
 
         return $this->ancestorChainCache = $chain;

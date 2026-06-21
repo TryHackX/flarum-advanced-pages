@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.5] - 2026-06-21
+
+### Changed
+- **Ancestor chain now resolves in a fixed two queries regardless of nesting
+  depth.** Building on 2.1.3's per-request memoisation, the parent walk no longer
+  lazy-loads one `SELECT` per level: it reads the whole `(id → parent_id)` forest
+  in a single lightweight query, walks it in memory, then hydrates the ancestor
+  rows in one more query. A page N levels deep now issues 2 queries instead of N.
+  Pure query-builder, so it stays cross-database (MySQL/MariaDB, SQLite,
+  PostgreSQL); breadcrumb output is byte-identical.
+- **Parent-cycle check is skipped when the parent isn't changing, and otherwise
+  runs in a single query.** Editing a page without touching its `parentId` (e.g. a
+  content-only edit) no longer walks the ancestry at all; when the parent *does*
+  change, the check reads one prefetched `(id → parent_id)` map instead of one
+  `Page::find()` per level. The 422-on-cycle behaviour is unchanged.
+- **Formatter configuration now uses constructor injection.** The custom BBCode
+  setup (`[table]`, `[spoiler]`, `[center]`) moved from a `resolve()` call inside a
+  `configure()` closure to an injected, invokable `FormatterConfigurator` class.
+  Internal cleanup only — the compiled formatter output is byte-identical, verified
+  across this extension's tags and unaffected third-party tags.
+- The *Allow script execution* checkbox **label** now reads “Allow script tags to
+  run on this page”, matching the help text that already (since 2.1.1) spells out
+  that the toggle gates `<script>` tags only and is **not** a sandbox.
+- Internal tidy-ups: the PHP renderer balances its error handler with
+  `restore_error_handler()` instead of re-setting the previous one, and
+  content-type validation references the `CONTENT_TYPES` constant instead of a
+  duplicated literal list.
+
+### Fixed
+- **The extended `[url]` parser no longer rewrites `[url]` inside code blocks.**
+  With the optional `bbcode_url` setting enabled, a literal `[url]…[/url]` written
+  inside a `[code]` block (or any `<pre>`/`<code>`) was turned into a link; those
+  regions are now shielded before the post-render pass, so code samples render
+  verbatim. The setting is off by default, so only forums that enabled it were
+  affected.
+
+*No new migrations and no JS/asset changes (`js/dist/*` unchanged); fully backward
+compatible. Run `php flarum cache:clear` after updating — the formatter
+configuration and a UI label changed.*
+
 ## [2.1.4] - 2026-06-12
 
 ### Changed
