@@ -248,7 +248,7 @@
   .EditPageModal.Modal {
     margin-top: 30px !important;
     margin-bottom: 30px !important;
-    max-height: calc(100vh - 60px);
+    max-height: ~"calc(100vh - 60px)";
     display: flex;
     flex-direction: column;
   }
@@ -257,19 +257,32 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    max-height: calc(100vh - 60px);
+    max-height: ~"calc(100vh - 60px)";
     margin: 0;
     width: 100%;
   }
 
-  .EditPageModal .Modal-header {
+  // Flarum's FormModal nests the content as .Modal-content > form >
+  // (.Modal-header + .Modal-body), so the scroll and the pinned header belong on
+  // the form's children — not on the form itself. Make the form the flex column
+  // and let the body scroll under a header that stays put.
+  .EditPageModal form {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .EditPageModal .Modal-header,
+  .EditPageModal .Modal-alert {
     flex-shrink: 0;
   }
 
-  .EditPageModal form {
-    overflow-y: auto;
+  .EditPageModal .Modal-body {
     flex: 1 1 auto;
     min-height: 0;
+    overflow-y: auto;
   }
 }
 

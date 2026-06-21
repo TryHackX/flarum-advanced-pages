@@ -7,6 +7,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-06-22
+
+### Added
+- **“Select / Copy” buttons on code blocks.** Every code block on an Advanced
+  Page now gets a small toolbar in its top-right corner: *Select* highlights the
+  whole block, *Copy* copies the current selection — or the entire block when
+  nothing is selected — to the clipboard (with a brief “Copied!” confirmation). A
+  new admin setting, **“Show Select / Copy buttons on code blocks in forum posts”**
+  (Forum Integration, off by default), extends the same toolbar to the code blocks
+  of regular forum posts.
+
+### Changed
+- **Code blocks are now height-capped and scroll internally.** A tall code block
+  on a page is limited to `max(50vh, 250px)` and scrolls inside, instead of
+  stretching the page to its full height — mirroring how forum posts render code.
+- **The page editor modal keeps its header pinned while the body scrolls.** The
+  modal's flex chain targeted the wrong level — Flarum's `FormModal` nests the
+  content as `.Modal-content > form > .Modal-header + .Modal-body`, so on tall
+  content the header scrolled away with the form. The form is now the flex column
+  and the body scrolls under a fixed header.
+- **Hardened the editor modal's desktop height against stricter LESS compilers.**
+  The `max-height: calc(100vh - 60px)` rules are now wrapped in LESS
+  string-escaping (`~"…"`). Some `less.php` builds pre-evaluate mixed-unit
+  `calc()` (`vh` combined with `px`) down to a bogus `calc(40vh)`, which renders
+  the modal far too short; the escape forces the expression through untouched.
+
+### Fixed
+- **Code blocks on preserve-newline BBCode pages no longer collapse onto a single
+  line.** In `preserve` newline mode the renderer turns line breaks into `<br>`,
+  including inside `[code]` blocks; the pass that converts those back to real
+  newlines required `</code></pre>` to be adjacent, but s9e TextFormatter inserts
+  its highlight.js loader `<script>` tags between `</code>` and `</pre>`, so it
+  never matched. The surviving `<br>`s were then flattened by the frontend's
+  highlight.js (which reads `textContent`, where a `<br>` contributes nothing),
+  dropping the whole block onto one line. The repair now matches up to `</code>`
+  regardless of trailing scripts, so code renders multi-line exactly as it does in
+  forum posts. Flarum-mode pages were never affected.
+- **Oversized empty gap above page content, most visible under breadcrumbs.** A
+  leading heading applied its `margin-top` (1.5em) on top of the content's own top
+  padding, and breadcrumbs stacked their bottom margin on as well — together a
+  ~110px empty band under the hero. The first child's top margin is now zeroed and
+  the content's top padding is trimmed when breadcrumbs precede it. Measured
+  hero→first-line gap dropped from 112px to 45px with breadcrumbs and 75px to 30px
+  without; spacing between subsequent elements is unchanged.
+
+*This release rebuilds the JS bundle and changes CSS — run `php flarum cache:clear`
+after updating (`composer` installs the prebuilt `js/dist`, so no Node build is
+needed on the server). No new migrations; fully backward compatible.*
+
 ## [2.1.5] - 2026-06-21
 
 ### Changed

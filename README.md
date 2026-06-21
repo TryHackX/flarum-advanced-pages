@@ -37,6 +37,9 @@ formatting toolbars, and granular access control.
   (highlight.js One Dark).
 - **Code editor** — CodeMirror-powered editor for HTML and PHP with
   syntax highlighting.
+- **Code blocks** — rendered code gets *Select* / *Copy* buttons and a
+  capped, scrollable height; the toolbar can optionally be added to regular
+  forum posts too (admin setting).
 - **BBCode extensions** — `[table]`, `[spoiler]`, `[center]`, extended
   `[url]` parser (configurable).
 - **Newline modes** — Flarum vanilla or *preserve-all* for BBCode pages.
@@ -136,6 +139,7 @@ php flarum cache:clear
 | Center | `[center]` | On |
 | Extended URL | `[url]` (accepts URLs Flarum rejects) | Off |
 | **Replace Forum Spoiler** | swap Flarum's default `[spoiler]` for the Advanced Pages `details/summary` style across all posts | Off |
+| **Code buttons in posts** | add the *Select* / *Copy* code-block toolbar to regular forum posts (it's always on for Advanced Pages) | Off |
 
 After toggling BBCode settings, clear the formatter cache:
 
@@ -149,7 +153,8 @@ Per-page newline behaviour:
 
 - **Flarum** *(default)* — multiple newlines collapse to a single break
   (vanilla Flarum behaviour).
-- **Preserve** — all newlines become `<br>` tags.
+- **Preserve** — every newline is kept as a line break (code blocks keep real
+  newlines, so they still highlight correctly).
 
 ### PHP pages
 

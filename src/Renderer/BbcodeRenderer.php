@@ -72,7 +72,13 @@ class BbcodeRenderer implements RendererInterface
             $html = preg_replace('#<br>(</(?:blockquote|details|summary|div)>)#i', '$1', $html);
             $html = preg_replace('#(</(?:pre|blockquote|details|ul|ol|table|div)>)<br>#i', '$1', $html);
 
-            $html = preg_replace_callback('#<pre[^>]*><code[^>]*>(.*?)</code></pre>#s', function ($m) {
+            // Inside code blocks the line breaks must be real newlines, not <br>:
+            // the frontend re-highlights them with highlight.js, which reads
+            // textContent (where <br> contributes nothing) and would otherwise
+            // collapse the whole block onto a single line. Match only up to the
+            // first </code> — s9e appends its hljs-loader <script> tags between
+            // </code> and </pre>, so the old </code></pre> adjacency never matched.
+            $html = preg_replace_callback('#<pre[^>]*><code[^>]*>(.*?)</code>#s', function ($m) {
                 return str_replace('<br>', "\n", $m[0]);
             }, $html);
 

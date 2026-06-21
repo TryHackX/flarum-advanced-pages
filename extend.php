@@ -66,5 +66,9 @@ return [
         ->default('tryhackx-advanced-pages.replace_forum_spoiler', false)
         ->serializeToForum('tryhackx-advanced-pages.replace_forum_spoiler', 'tryhackx-advanced-pages.replace_forum_spoiler', function ($value) {
             return (bool) $value;
+        })
+        ->default('tryhackx-advanced-pages.code_buttons_in_posts', false)
+        ->serializeToForum('tryhackx-advanced-pages.code_buttons_in_posts', 'tryhackx-advanced-pages.code_buttons_in_posts', function ($value) {
+            return (bool) $value;
         }),
 ];

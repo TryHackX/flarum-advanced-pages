@@ -34,6 +34,7 @@ tryhackx-advanced-pages:
       forum_title: Forum Integration
       forum_help: Override how spoilers are displayed in regular forum posts. Requires clearing the formatter cache (php flarum cache:clear).
       replace_forum_spoiler: "Replace Flarum's default spoiler with Advanced Pages spoiler style (details/summary)"
+      code_buttons_in_posts: "Show Select / Copy buttons on code blocks in forum posts"
 
     edit_page:
       create_title: Create Page
@@ -80,6 +81,10 @@ tryhackx-advanced-pages:
       thanks: Thank you for your support!
 
   forum:
+    code:
+      select: Select
+      copy: Copy
+      copied: Copied!
     spoiler:
       locked: You do not have permission to view spoiler content.
     page:

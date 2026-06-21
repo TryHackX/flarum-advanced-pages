@@ -18,6 +18,13 @@
   font-weight: 600;
 }
 
+// When breadcrumbs are shown they already provide the spacing under the hero,
+// so the content below them doesn't also need its full top padding — otherwise
+// the breadcrumb margin and the content padding stack into an oversized gap.
+.AdvancedPages-breadcrumbs + .AdvancedPages-content {
+  padding-top: 8px;
+}
+
 .AdvancedPages-hero {
   background: var(--hero-bg);
   color: var(--hero-color);
@@ -55,6 +62,13 @@
       margin-bottom: 0.5em;
     }
 
+    // A leading heading shouldn't stack its top margin on top of the content's
+    // padding — that opens an oversized gap under the hero (and below the
+    // breadcrumbs when present). Drop the very first block's top margin.
+    > :first-child {
+      margin-top: 0;
+    }
+
     p {
       margin-bottom: 1em;
     }
@@ -86,7 +100,10 @@
       color: #abb2bf;
       padding: 15px;
       border-radius: 4px;
-      overflow-x: auto;
+      overflow: auto;
+      // Cap tall code blocks and scroll inside, mirroring how posts render code
+      // (escaped so LESS emits CSS max() instead of evaluating it at compile time).
+      max-height: ~"max(50vh, 250px)";
       margin: 1em 0;
     }
 
@@ -317,4 +334,51 @@
 
 .hljs-link {
   text-decoration: underline;
+}
+
+// --- Code block Select / Copy toolbar ----------------------------------------
+// Shared by Advanced Pages content and (when enabled) forum posts. The <pre> is
+// wrapped so the toolbar can stay at the top-right while the code scrolls inside
+// a capped-height block.
+.AdvancedPages-codeWrap {
+  position: relative;
+}
+
+.AdvancedPages-codeToolbar {
+  position: absolute;
+  top: 6px;
+  // Default; JS overrides `right` per-block so the toolbar clears the vertical
+  // scrollbar (which lives on the <pre> on pages but the <code> on forum posts).
+  right: 6px;
+  display: flex;
+  gap: 4px;
+  opacity: 0.4;
+  transition: opacity 0.15s ease;
+}
+
+.AdvancedPages-codeWrap:hover .AdvancedPages-codeToolbar,
+.AdvancedPages-codeToolbar:focus-within {
+  opacity: 1;
+}
+
+.AdvancedPages-codeBtn {
+  font-size: 11px;
+  line-height: 1.4;
+  padding: 2px 8px;
+  font-family: inherit;
+  color: var(--muted-color);
+  background: var(--control-bg);
+  border: 1px solid var(--control-bg);
+  border-radius: 3px;
+  cursor: pointer;
+  transition: color 0.15s ease, opacity 0.15s ease;
+
+  &:hover {
+    color: var(--text-color);
+  }
+
+  &.is-copied {
+    color: #98c379;
+    border-color: rgba(152, 195, 121, 0.5);
+  }
 }

@@ -2,6 +2,7 @@ import app from 'flarum/forum/app';
 import Page from 'flarum/common/components/Page';
 import LoadingIndicator from 'flarum/common/components/LoadingIndicator';
 import Link from 'flarum/common/components/Link';
+import addCodeToolbar from '../addCodeToolbar';
 import hljs from 'highlight.js/lib/core';
 import javascript from 'highlight.js/lib/languages/javascript';
 import php from 'highlight.js/lib/languages/php';
@@ -88,12 +89,14 @@ export default class PageView extends Page {
   oncreate(vnode) {
     super.oncreate(vnode);
     this.highlightCode(vnode.dom);
+    addCodeToolbar(vnode.dom);
     this.maybeActivateScripts(vnode.dom);
   }
 
   onupdate(vnode) {
     super.onupdate(vnode);
     this.highlightCode(vnode.dom);
+    addCodeToolbar(vnode.dom);
     this.maybeActivateScripts(vnode.dom);
   }
 
