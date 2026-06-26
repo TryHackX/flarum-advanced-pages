@@ -612,7 +612,7 @@
 
 .AdvancedPages-support {
   text-align: center;
-
+  margin-bottom: 2px;
   .Button .icon {
     color: #e74c3c;
   }
@@ -794,3 +794,11 @@
   color: var(--control-color);
 }
 
+@media (max-width: 767px) {
+  .AdvancedPages-table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch; // Płynne przewijanie na iOS
+  }
+}
