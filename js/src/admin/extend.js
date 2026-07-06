@@ -51,6 +51,15 @@ export default [
     )
     .permission(
       () => ({
+        icon: 'fas fa-external-link-alt',
+        label: app.translator.trans('tryhackx-advanced-pages.admin.permissions.create_redirect_label'),
+        permission: 'advancedPages.create.redirect',
+      }),
+      'start',
+      64
+    )
+    .permission(
+      () => ({
         icon: 'fas fa-eye-slash',
         label: app.translator.trans('tryhackx-advanced-pages.admin.permissions.view_spoilers_label'),
         permission: 'advancedPages.viewSpoilers',

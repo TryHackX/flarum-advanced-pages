@@ -3,29 +3,7 @@ import Page from 'flarum/common/components/Page';
 import LoadingIndicator from 'flarum/common/components/LoadingIndicator';
 import Link from 'flarum/common/components/Link';
 import addCodeToolbar from '../addCodeToolbar';
-import hljs from 'highlight.js/lib/core';
-import javascript from 'highlight.js/lib/languages/javascript';
-import php from 'highlight.js/lib/languages/php';
-import xml from 'highlight.js/lib/languages/xml';
-import css from 'highlight.js/lib/languages/css';
-import json from 'highlight.js/lib/languages/json';
-import bash from 'highlight.js/lib/languages/bash';
-import sql from 'highlight.js/lib/languages/sql';
-import python from 'highlight.js/lib/languages/python';
-import markdown from 'highlight.js/lib/languages/markdown';
-
-hljs.registerLanguage('javascript', javascript);
-hljs.registerLanguage('js', javascript);
-hljs.registerLanguage('php', php);
-hljs.registerLanguage('html', xml);
-hljs.registerLanguage('xml', xml);
-hljs.registerLanguage('css', css);
-hljs.registerLanguage('json', json);
-hljs.registerLanguage('bash', bash);
-hljs.registerLanguage('shell', bash);
-hljs.registerLanguage('sql', sql);
-hljs.registerLanguage('python', python);
-hljs.registerLanguage('markdown', markdown);
+import hljs from '../../common/hljs';
 
 export default class PageView extends Page {
   oninit(vnode) {
@@ -47,6 +25,7 @@ export default class PageView extends Page {
     if (preloaded) {
       this.page = preloaded;
       this.loading = false;
+      if (this.maybeRedirect()) return;
       this.updateTitle();
       return;
     }
@@ -63,6 +42,7 @@ export default class PageView extends Page {
       .then((payload) => {
         this.page = app.store.pushPayload(payload);
         this.loading = false;
+        if (this.maybeRedirect()) return;
         this.updateTitle();
         m.redraw();
       })
@@ -71,6 +51,51 @@ export default class PageView extends Page {
         this.notFound = true;
         m.redraw();
       });
+  }
+
+  // Immediate "redirect" pages forward right away (a full page load is already
+  // 302'd server-side; this covers in-app SPA navigation). Landing pages instead
+  // render and run a visible countdown — see maybeStartRedirectCountdown, called
+  // once the DOM exists. Returns true when it forwarded synchronously (so the
+  // caller can skip rendering).
+  maybeRedirect() {
+    if (!this.page || this.page.contentType() !== 'redirect') return false;
+    if (this.page.redirectImmediate() === false) return false; // landing → countdown after render
+
+    const target = this.page.redirectUrl();
+    if (!target) return false;
+
+    // redirectUrl is validated server-side (http(s):// or root-relative "/…"),
+    // so it is safe to assign. replace() keeps the redirect out of history.
+    window.location.replace(target);
+    return true;
+  }
+
+  // For a landing-mode redirect page, tick the "Redirecting in N…" countdown
+  // rendered by RedirectRenderer down to zero, then forward. Called from
+  // oncreate/onupdate (needs the DOM); runs at most once per loaded page.
+  maybeStartRedirectCountdown(dom) {
+    if (this._redirectInterval || !dom) return;
+    if (!this.page || this.page.contentType() !== 'redirect') return;
+    if (this.page.redirectImmediate() !== false) return;
+
+    const target = this.page.redirectUrl();
+    if (!target) return;
+
+    const container = dom.querySelector('.AdvancedPages-redirect[data-redirect-seconds]');
+    let seconds = container ? parseInt(container.getAttribute('data-redirect-seconds'), 10) : 5;
+    if (!(seconds > 0)) seconds = 5;
+
+    this._redirectInterval = setInterval(() => {
+      seconds -= 1;
+      const span = dom.querySelector('.AdvancedPages-redirectSeconds');
+      if (span) span.textContent = String(Math.max(seconds, 0));
+      if (seconds <= 0) {
+        clearInterval(this._redirectInterval);
+        this._redirectInterval = null;
+        window.location.replace(target);
+      }
+    }, 1000);
   }
 
   updateTitle() {
@@ -91,6 +116,7 @@ export default class PageView extends Page {
     this.highlightCode(vnode.dom);
     addCodeToolbar(vnode.dom);
     this.maybeActivateScripts(vnode.dom);
+    this.maybeStartRedirectCountdown(vnode.dom);
   }
 
   onupdate(vnode) {
@@ -98,6 +124,16 @@ export default class PageView extends Page {
     this.highlightCode(vnode.dom);
     addCodeToolbar(vnode.dom);
     this.maybeActivateScripts(vnode.dom);
+    this.maybeStartRedirectCountdown(vnode.dom);
+  }
+
+  onremove(vnode) {
+    super.onremove(vnode);
+    // Cancel a pending landing-mode redirect if the user navigates away first.
+    if (this._redirectInterval) {
+      clearInterval(this._redirectInterval);
+      this._redirectInterval = null;
+    }
   }
 
   // Runs activateScripts at most once per loaded page, whether the page arrives

@@ -7,6 +7,7 @@ use Flarum\Frontend\Document;
 use Flarum\Http\RequestUtil;
 use Illuminate\Support\Arr;
 use Psr\Http\Message\ServerRequestInterface as Request;
+use TryHackX\AdvancedPages\Renderer\RedirectRenderer;
 
 class PageContent
 {
@@ -31,6 +32,24 @@ class PageContent
 
             if ($metaDescription) {
                 $document->meta['description'] = $metaDescription;
+            }
+
+            // Redirect pages forward via a head meta-refresh on the initial (full)
+            // page load, so it works even without JavaScript. Immediate pages are
+            // normally already turned into a real 302 by PageViewController before
+            // reaching here, so in practice this fires for the landing mode with the
+            // countdown delay — the visitor sees the page, then forwards. (delay = 0
+            // for immediate is kept as a belt-and-suspenders fallback.) The client
+            // (PageView) runs the visible countdown and also forwards, covering
+            // in-app SPA navigation. redirectUrl is server-validated (http(s) or
+            // root-relative) and HTML-escaped here, so it cannot break out of the
+            // attribute or carry a dangerous scheme.
+            $redirectUrl = $apiDocument->data->attributes->redirectUrl ?? null;
+            $redirectImmediate = $apiDocument->data->attributes->redirectImmediate ?? true;
+            if (is_string($redirectUrl) && $redirectUrl !== '') {
+                $delay = $redirectImmediate ? 0 : RedirectRenderer::COUNTDOWN_SECONDS;
+                $escaped = htmlspecialchars($redirectUrl, ENT_QUOTES, 'UTF-8');
+                $document->head[] = '<meta http-equiv="refresh" content="' . $delay . '; url=' . $escaped . '">';
             }
         }
 

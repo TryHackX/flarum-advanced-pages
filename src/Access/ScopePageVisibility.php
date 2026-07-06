@@ -22,7 +22,13 @@ class ScopePageVisibility
         }
 
         $query->where(function (Builder $query) use ($actor) {
-            $query->whereNull('visible_groups');
+            // "No group restriction" is stored as NULL. PageResource normalises an
+            // empty array to NULL on write, but also treat a literal '[]' (the JSON
+            // the `array` cast produces for []) as unrestricted, so any legacy row
+            // saved before that normalisation stays visible. Plain string equality
+            // keeps this cross-database (the column is TEXT, not a JSON type).
+            $query->whereNull('visible_groups')
+                ->orWhere('visible_groups', '[]');
 
             $groupIds = $actor->isGuest()
                 ? [Group::GUEST_ID]

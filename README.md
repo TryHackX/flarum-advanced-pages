@@ -27,10 +27,17 @@ formatting toolbars, and granular access control.
 
 ## Features
 
-- **5 content types** — HTML (rendered raw — admin/permission-gated),
-  BBCode, Markdown, PHP (server-side, admin/permission-gated), Plain Text.
+- **6 content types** — HTML (rendered raw — admin/permission-gated),
+  BBCode, Markdown, PHP (server-side, admin/permission-gated), Plain Text,
+  and Redirection (forward to another URL — great for pinned menu links).
+- **View counter** — every page tracks how many times it's been viewed,
+  shown in the admin list and readable from PHP pages (`$page->view_count`).
 - **Nested pages** — parent/child hierarchy with slash-based URLs and
   breadcrumbs.
+- **Pinned navigation** — pin any page into the forum's sidebar navigation
+  menu (alongside *All Discussions*, *Members*, *Badges*…) with an optional
+  FontAwesome icon; pinned links follow the page-list order and respect each
+  page's visibility.
 - **Formatting toolbars** — context-aware buttons for the BBCode and
   Markdown editors.
 - **Live preview** — Raw / Preview toggle with syntax highlighting
@@ -129,6 +136,7 @@ php flarum cache:clear
 | **Markdown** | Full Markdown with live preview | Escaped and parsed via s9e/TextFormatter |
 | **PHP** | Server-side PHP execution (`eval`) | **Full server privileges** — not a real sandbox. Creation gated by `advancedPages.create.php` (console-only). Errors logged, never shown. |
 | **Plain Text** | Auto-escaped text with URL linking | Fully escaped output |
+| **Redirection** | Forwards visitors to another URL | Target must be an `https://`/`http://` address or a root-relative `/path` — validated on save, so no `javascript:`/`data:` schemes. Creation gated by `advancedPages.create.redirect` (admin grid). |
 
 ### BBCode toggles
 
@@ -231,7 +239,9 @@ in a single query, no matter how many calls you make.
 | `$pages->find($slug)` | A single page by slug or id (or `null`). |
 | `$pages->ancestors($page)` | The parent chain (root → immediate parent). |
 
-Each `Page` exposes `->title`, `->slug`, `->content_type`, `->is_published`, etc.
+Each `Page` exposes `->title`, `->slug`, `->content_type`, `->is_published`,
+`->view_count` (the hit counter), etc. — so a PHP page can, for example, build a
+"most viewed pages" list with `$pages->all()->sortByDesc('view_count')`.
 
 ```php
 <?php
@@ -273,6 +283,47 @@ Two ways to organise pages:
 Slugs may be a slash path (e.g. `docs/getting-started`) or flat — your choice;
 they accept lowercase `a-z0-9-` segments joined by single `/` (no leading,
 trailing or doubled slashes).
+
+#### Pinning a page to the navigation menu
+
+In the page editor, tick **Pin to navigation menu** to surface the page as a link
+in the forum's index sidebar navigation — the same menu that holds *All
+Discussions* and links added by other extensions (*Members*, *Badges*, …). When
+pinned, two optional fields appear:
+
+- **Menu icon** — a FontAwesome class such as `fas fa-book` or `far fa-file-alt`
+  (leave it blank for a default icon).
+- **Short Name** — a shorter label to show in the menu when the page title is too
+  long for a nav item; leave it blank to use the page title.
+
+Pinned links are ordered exactly like the admin page list (parent/child tree,
+then per-level order) and honour every visibility rule — a draft, hidden,
+restricted or group-limited page is only shown in the menu to viewers who are
+allowed to open it. Nothing is pinned by default.
+
+#### Redirection pages
+
+A **Redirection** page (content type *Redirection*) forwards visitors to another
+address — enter an `https://…` URL or a root-relative `/path` (e.g. `/tags`). The
+target is validated on save, so it can never carry a `javascript:` or `data:`
+scheme.
+
+Two behaviours, chosen per page with **Redirect immediately**:
+
+- **On (default)** — visiting `/p/{slug}` issues a real HTTP 302 redirect straight
+  to the target (no page shown).
+- **Off** — the page shows a 5-second countdown (“You will be redirected in N s…”)
+  above the destination link, then forwards automatically. No button to click.
+
+Either way **the visit is counted first**. Combined with pinning, this is the
+easiest way to add a **custom menu link** — internal or external — to the forum
+navigation. The menu link points at the page's own `/p/{slug}` (not straight at
+the destination) precisely so those clicks pass through the view counter before
+forwarding.
+
+> **Tip:** to redirect, use this content type — don't write a PHP page that calls
+> `header('Location: …')`. PHP pages are rendered inline (their output is captured,
+> not sent as a raw response), so `header()` and `exit()` won't work there.
 
 #### Per-tree breadcrumb styling
 

@@ -13,6 +13,7 @@ use TryHackX\AdvancedPages\Renderer\HtmlRenderer;
 use TryHackX\AdvancedPages\Renderer\MarkdownRenderer;
 use TryHackX\AdvancedPages\Renderer\PageRenderer;
 use TryHackX\AdvancedPages\Renderer\PhpRenderer;
+use TryHackX\AdvancedPages\Renderer\RedirectRenderer;
 use TryHackX\AdvancedPages\Renderer\TextRenderer;
 
 class AdvancedPagesServiceProvider extends AbstractServiceProvider
@@ -22,6 +23,7 @@ class AdvancedPagesServiceProvider extends AbstractServiceProvider
         $this->container->singleton(TextRenderer::class);
         $this->container->singleton(HtmlRenderer::class);
         $this->container->singleton(PhpRenderer::class);
+        $this->container->singleton(RedirectRenderer::class);
 
         // The BBCode and Markdown renderers cache the (expensive) s9e parse+render
         // step. They share Flarum's own file cache store ('cache.filestore'), so a

@@ -5,6 +5,7 @@ namespace TryHackX\AdvancedPages\Api\Controller;
 use Flarum\Api\Client;
 use Flarum\Http\RequestUtil;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\Query\Expression;
 use Illuminate\Support\Arr;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -41,6 +42,16 @@ class ShowPageBySlugController implements RequestHandlerInterface
         if (! $page) {
             throw (new ModelNotFoundException())->setModel(Page::class);
         }
+
+        // Count this view. A single atomic UPDATE (view_count = view_count + 1) via
+        // the base query builder — no read-modify-write race, and no touching of
+        // updated_at (which tracks content edits, not visits). This is the one
+        // genuine "view" path (the admin list uses the Index endpoint, never this),
+        // and a full page load reuses the server-preloaded document, so a view is
+        // counted exactly once. `column + 1` stays cross-database.
+        $page->newQuery()->toBase()
+            ->where('id', $page->id)
+            ->update(['view_count' => new Expression('view_count + 1')]);
 
         return $this->api
             ->withParentRequest($request)

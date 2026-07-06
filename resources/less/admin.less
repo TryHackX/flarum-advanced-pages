@@ -80,6 +80,22 @@
   tab-size: 2;
 }
 
+// The optional menu-icon / short-name fields, revealed when "Pin to navigation
+// menu" is on.
+.AdvancedPages-pinOptions {
+  margin-top: 8px;
+  padding-left: 24px;
+  border-left: 2px solid var(--control-bg);
+
+  .Form-group {
+    margin-bottom: 12px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+}
+
 .AdvancedPages-table {
   width: 100%;
   border-collapse: collapse;
@@ -100,6 +116,20 @@
 
   tr:hover td {
     background: rgba(255, 255, 255, 0.04);
+  }
+}
+
+// On narrow screens the page table is wider than the viewport (type, status,
+// groups, views and action columns). Let it scroll horizontally instead of
+// squashing the columns unreadably. `display: block` turns the table into a
+// scroll container; `min-width` keeps it filling the panel on wider phones.
+@media (max-width: 767px) {
+  .AdvancedPages-table {
+    display: block;
+    width: 100%;
+    min-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch; // momentum scrolling on iOS
   }
 }
 
@@ -142,6 +172,22 @@
     background: #fff3e0;
     color: #e65100;
   }
+
+  &--redirect {
+    background: #e0f2f1;
+    color: #00695c;
+  }
+}
+
+.AdvancedPages-views {
+  white-space: nowrap;
+  color: var(--muted-color);
+  font-size: 13px;
+
+  i {
+    margin-right: 4px;
+    opacity: 0.7;
+  }
 }
 
 .AdvancedPages-status {
@@ -166,12 +212,15 @@
 
 .AdvancedPages-actions {
   white-space: nowrap;
+  // inline-flex + center so the drag handle lines up with the buttons instead of
+  // sitting on the text baseline. gap replaces the old per-button right margin.
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 
   .Button {
-    margin-right: 4px;
     min-height: 30px;
     padding: 4px 10px;
-    vertical-align: middle;
   }
 }
 
@@ -612,7 +661,7 @@
 
 .AdvancedPages-support {
   text-align: center;
-  margin-bottom: 2px;
+
   .Button .icon {
     color: #e74c3c;
   }
@@ -794,11 +843,3 @@
   color: var(--control-color);
 }
 
-@media (max-width: 767px) {
-  .AdvancedPages-table {
-    display: block;
-    width: 100%;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch; // Płynne przewijanie na iOS
-  }
-}

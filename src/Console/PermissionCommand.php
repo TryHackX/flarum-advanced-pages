@@ -32,6 +32,7 @@ class PermissionCommand extends AbstractCommand
         'text' => 'advancedPages.create.text',
         'bbcode' => 'advancedPages.create.bbcode',
         'markdown' => 'advancedPages.create.markdown',
+        'redirect' => 'advancedPages.create.redirect',
         'html' => 'advancedPages.create.html',
         'php' => 'advancedPages.create.php',
         'manage' => 'advancedPages.manage',

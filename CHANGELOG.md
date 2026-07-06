@@ -5,7 +5,92 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.3.0] - 2026-07-06
+
+### Added
+- **Pin pages to the navigation menu.** A new **“Pin to navigation menu”** toggle
+  in the page editor surfaces a page as a link in the forum's index-sidebar
+  navigation — the same *Dropdown-menu* list that holds *All Discussions* and links
+  added by other extensions (*Members*, *Badges*, …). When pinned, two optional
+  fields appear: a **Menu icon** (a FontAwesome class, e.g. `fas fa-book`; blank
+  falls back to a default icon) and a **Short Name** (a shorter menu label for when
+  the page title is too long; blank uses the title). Each pinned link is a plain
+  full-page-load link (not an in-app SPA route), so a pinned redirect forwards on
+  the server straight away — no "Loading…" step — and clicking behaves the same as
+  the page-list "open" link (including ⌘/Ctrl-click into a new tab). Pinned links
+  are ordered exactly like the admin page list
+  (parent/child tree, then per-level order) and honour every visibility rule — a
+  draft, hidden, restricted or group-limited page appears in the menu only for
+  viewers allowed to open it. The set rides along on the forum payload
+  (`advancedPagesPinned`), computed in a single lightweight, content-free query, so
+  the menu renders with no extra request. Nothing is pinned by default. *(Adds an
+  `is_pinned` / `pinned_icon` / `pinned_label` migration.)*
+- **New "Redirection" content type.** A redirect page stores a destination URL and
+  forwards visitors there, counting the visit first. A per-page **Redirect
+  immediately** toggle chooses the behaviour: on (default) issues a real HTTP 302 at
+  `/p/{slug}` (handled by a dedicated `PageViewController` before the SPA loads);
+  off shows the page with a live **5-second countdown** ("You will be redirected in
+  N s…") above the destination link, then forwards automatically (no click required,
+  via a delayed meta-refresh plus a client-side timer). The target is validated on save and wherever it is
+  rendered: only an `https://`/`http://` address or a root-relative `/path` is
+  accepted, so it can never carry a `javascript:`/`data:` scheme into a redirect or
+  a bare href. It pairs with pinning to give **custom menu links** (internal or
+  external); the pinned link points at the page's own `/p/{slug}` (not straight at
+  the destination) so those clicks are counted before forwarding. Creation is gated
+  by a new, grid-grantable `advancedPages.create.redirect` permission. *(Adds a
+  `redirect_immediate` migration; the URL itself lives in the existing `content`.)*
+- **Per-page view counter.** Every page now tracks how many times it has been
+  viewed, incremented once per visit with a single atomic `view_count = view_count
+  + 1` update that never touches `updated_at`. It is shown in a new **Views** column
+  in the admin list (after *Groups*) and exposed to PHP pages as `$page->view_count`
+  (and on every page in the `$pages` tree helper), so a page can build e.g. a
+  "most viewed" list. *(Adds a `view_count` migration.)*
+
+### Fixed
+- **Saving a page no longer renders (executes) its content.** The API used to
+  render `contentHtml` on every non-list response, including create/update — so
+  saving a PHP page ran it, and a page that called `exit()`/`header()` aborted the
+  save response with an "Oops! Something went wrong" error (the page saved anyway).
+  `contentHtml` is now rendered only on reads (GET); a save just persists. (For
+  redirects, use the Redirection content type rather than a PHP `header()` page —
+  PHP pages are rendered inline and cannot emit HTTP headers or `exit`.)
+- **The admin page list is horizontally scrollable on mobile.** On narrow screens
+  the table (type, status, groups, views and action columns) overflowed the viewport
+  and clipped, hiding values; it now scrolls horizontally so every column stays
+  readable.
+- **Action buttons in the admin list are vertically aligned.** The drag-to-reorder
+  handle sat on the text baseline, a few pixels below the Edit/open buttons; the
+  actions cell is now `inline-flex` + `align-items: center`, so the handle lines up
+  with the rest.
+- **A page with an empty `visibleGroups` array is no longer hidden from everyone.**
+  The `array` cast persists `[]` as the JSON string `'[]'`, which the visibility
+  scope's `whereNull` / `whereJsonContains` checks all miss — silently hiding the
+  page. Saving now normalises an empty array to `NULL` (the single “no restriction”
+  sentinel), and the scope additionally treats a literal `'[]'` as unrestricted so
+  any legacy row stays visible (plain string equality, kept cross-database).
+
+### Changed
+- **The POST form-submission route no longer hardcodes an internal Flarum container
+  binding.** `POST /p/{slug}` now resolves through Flarum's own
+  `RouteHandlerFactory::toForum()` — the documented factory `Extend\Frontend` uses
+  for the GET route — via a small `PageFormController`, instead of reaching for the
+  `flarum.frontend.forum` binding by name. Behaviour is identical (verified: PHP
+  pages still receive `$_POST` / `$_FILES` and the CSRF token); the route is now
+  resilient to core refactors of that binding and is unit-testable.
+- **highlight.js language registration is shared.** The forum `PageView` and the
+  admin editor preview now import one `common/hljs` module instead of each
+  registering the same nine languages, so the set can never drift between them.
+- **The PHP page sandbox resolves its `$pages` tree helper through the container.**
+  `PhpRenderer` now builds `PageTree` via `container->make(…, ['actor' => …])`
+  rather than `new`, so any future `PageTree` dependencies are auto-wired and it can
+  be substituted in tests.
+- Documented in the `parent_id` migration why it must use raw closures rather than
+  the `Migration::addColumns()` helper (self-referencing foreign key).
+
+*This release rebuilds the JS bundle, changes CSS and adds migrations — run
+`php flarum migrate && php flarum cache:clear` after updating (`composer` installs
+the prebuilt `js/dist`, so no Node build is needed on the server). Backward
+compatible; nothing is pinned and no page redirects until you opt a page in.*
 
 ## [2.2.0] - 2026-06-22
 

@@ -24,6 +24,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int|null $parent_id
  * @property int $position
  * @property string|null $breadcrumbs_css
+ * @property bool $is_pinned
+ * @property string|null $pinned_icon
+ * @property string|null $pinned_label
+ * @property int $view_count
+ * @property bool $redirect_immediate
  * @property int|null $user_id
  * @property int|null $edit_user_id
  * @property \Carbon\Carbon|null $created_at
@@ -43,6 +48,9 @@ class Page extends AbstractModel
         'allow_scripts' => 'boolean',
         'visible_groups' => 'array',
         'position' => 'integer',
+        'is_pinned' => 'boolean',
+        'view_count' => 'integer',
+        'redirect_immediate' => 'boolean',
     ];
 
     /** Memoised root→parent chain shared by ancestors() and rootPage(). */

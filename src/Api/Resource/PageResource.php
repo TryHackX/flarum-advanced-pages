@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Tobyz\JsonApiServer\Context;
 use TryHackX\AdvancedPages\Event;
 use TryHackX\AdvancedPages\Page;
+use TryHackX\AdvancedPages\RedirectTarget;
 use TryHackX\AdvancedPages\Renderer\PageRenderer;
 
 /**
@@ -22,7 +23,7 @@ use TryHackX\AdvancedPages\Renderer\PageRenderer;
  */
 class PageResource extends AbstractDatabaseResource
 {
-    public const CONTENT_TYPES = ['text', 'bbcode', 'markdown', 'html', 'php'];
+    public const CONTENT_TYPES = ['text', 'bbcode', 'markdown', 'html', 'php', 'redirect'];
 
     /**
      * Slug for a page or a nested path: lowercase segments of [a-z0-9-] joined
@@ -147,6 +148,14 @@ class PageResource extends AbstractDatabaseResource
                         return null;
                     }
 
+                    // Only render on reads (GET). A create/update (POST/PATCH) has no
+                    // need for the rendered HTML — the editor closes on save — and
+                    // rendering it would needlessly execute the page (a PHP page that
+                    // calls exit()/header() would otherwise abort the save response).
+                    if ($context->request->getMethod() !== 'GET') {
+                        return null;
+                    }
+
                     // Expose the session CSRF token to PHP pages so their forms can
                     // POST back to /p/{slug} (the POST route enforces CSRF).
                     $session = $context->request->getAttribute('session');
@@ -209,6 +218,54 @@ class PageResource extends AbstractDatabaseResource
                 ->writable()
                 ->nullable()
                 ->property('breadcrumbs_css'),
+
+            // Pin this page into the forum's index-sidebar navigation menu. The
+            // pinned links are serialized to the forum payload (see the
+            // ForumResource extender in extend.php), ordered like the page list.
+            Schema\Boolean::make('isPinned')
+                ->writable()
+                ->property('is_pinned'),
+
+            // Optional FontAwesome icon class (e.g. "fas fa-book") for the pinned
+            // nav link. Rendered as an <i> class name by Mithril (escaped), so it
+            // cannot inject markup.
+            Schema\Str::make('pinnedIcon')
+                ->writable()
+                ->nullable()
+                ->maxLength(100)
+                ->property('pinned_icon'),
+
+            // Optional short label shown in the nav menu instead of the (possibly
+            // long) page title. Falls back to the title when blank. Rendered as a
+            // text node by Mithril (escaped).
+            Schema\Str::make('pinnedLabel')
+                ->writable()
+                ->nullable()
+                ->maxLength(100)
+                ->property('pinned_label'),
+
+            // Hit counter, incremented once per view in ShowPageBySlugController.
+            // Read-only over the API (never client-writable); shown in the admin
+            // list and exposed to PHP pages as $page->view_count.
+            Schema\Integer::make('viewCount')
+                ->property('view_count'),
+
+            // The destination of a "redirect" page, exposed publicly (a redirect's
+            // target is not secret, unlike the visibility-gated raw `content`) so
+            // the frontend can forward without needing edit rights. Null for every
+            // other type, and null if the stored target is not a safe URL.
+            Schema\Str::make('redirectUrl')
+                ->get(fn (Page $page) => $page->content_type === 'redirect'
+                    ? RedirectTarget::sanitize($page->content)
+                    : null),
+
+            // Whether a redirect page forwards immediately (true, default) or shows
+            // a landing page with the link (false). Public-readable so the frontend
+            // knows whether to auto-forward; writable only through the edit-gated
+            // Update endpoint.
+            Schema\Boolean::make('redirectImmediate')
+                ->writable()
+                ->property('redirect_immediate'),
 
             // Resolved breadcrumb CSS for THIS page's tree (the root's value),
             // injected by the frontend. Single-page fetches only.
@@ -275,7 +332,26 @@ class PageResource extends AbstractDatabaseResource
             $model->edit_user_id = $actor->id;
         }
 
+        // Normalise an empty visible_groups array to NULL ("no restriction").
+        // The `array` cast persists [] as the JSON string '[]', which the
+        // visibility scope's whereNull()/whereJsonContains() checks would all
+        // miss — silently hiding the page from everyone. NULL is the single
+        // sentinel the scope understands, so coerce here on write.
+        if (is_array($model->visible_groups) && count($model->visible_groups) === 0) {
+            $model->visible_groups = null;
+        }
+
         $type = $model->content_type ?: 'text';
+
+        // A redirect page's content is its destination URL: reject anything that
+        // isn't a plain http(s) URL or a root-relative path, so a redirect can
+        // never carry a dangerous scheme (javascript:, data:, …) into an HTTP
+        // redirect or a bare href.
+        if ($type === 'redirect' && ! RedirectTarget::isSafe($model->content)) {
+            throw new ValidationException([
+                'content' => 'Enter a valid redirect URL — an https:// address or a path starting with "/".',
+            ]);
+        }
 
         // Per-content-type permission enforcement. Admins bypass (hasPermission()
         // is always true for administrators). On create, every type requires its

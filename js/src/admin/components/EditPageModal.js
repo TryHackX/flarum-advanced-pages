@@ -5,28 +5,7 @@ import Stream from 'flarum/common/utils/Stream';
 import ItemList from 'flarum/common/utils/ItemList';
 import Form from 'flarum/common/components/Form';
 import { marked } from 'marked';
-import hljs from 'highlight.js/lib/core';
-import javascript from 'highlight.js/lib/languages/javascript';
-import php from 'highlight.js/lib/languages/php';
-import xml from 'highlight.js/lib/languages/xml';
-import css from 'highlight.js/lib/languages/css';
-import json from 'highlight.js/lib/languages/json';
-import bash from 'highlight.js/lib/languages/bash';
-import sql from 'highlight.js/lib/languages/sql';
-import python from 'highlight.js/lib/languages/python';
-import mdLang from 'highlight.js/lib/languages/markdown';
-
-hljs.registerLanguage('javascript', javascript);
-hljs.registerLanguage('js', javascript);
-hljs.registerLanguage('php', php);
-hljs.registerLanguage('xml', xml);
-hljs.registerLanguage('html', xml);
-hljs.registerLanguage('css', css);
-hljs.registerLanguage('json', json);
-hljs.registerLanguage('bash', bash);
-hljs.registerLanguage('sql', sql);
-hljs.registerLanguage('python', python);
-hljs.registerLanguage('markdown', mdLang);
+import hljs from '../../common/hljs';
 
 import CodeEditor from './CodeEditor';
 import EditorToolbar from './EditorToolbar';
@@ -68,6 +47,10 @@ export default class EditPageModal extends FormModal {
     this.pageParentId = Stream(this.page.parentId() || null);
     this.pageBreadcrumbsCss = Stream(this.page.breadcrumbsCss() || '');
     this.customBreadcrumbsCss = Stream(!!this.page.breadcrumbsCss());
+    this.pageIsPinned = Stream(this.page.isPinned() !== undefined ? this.page.isPinned() : false);
+    this.pagePinnedIcon = Stream(this.page.pinnedIcon() || '');
+    this.pagePinnedLabel = Stream(this.page.pinnedLabel() || '');
+    this.pageRedirectImmediate = Stream(this.page.redirectImmediate() !== undefined ? this.page.redirectImmediate() : true);
 
     this.showPreview = false;
     this.saved = false;
@@ -89,6 +72,10 @@ export default class EditPageModal extends FormModal {
       newlineMode: this.pageNewlineMode(),
       parentId: this.pageParentId(),
       breadcrumbsCss: this.customBreadcrumbsCss() ? this.pageBreadcrumbsCss() : '',
+      isPinned: this.pageIsPinned(),
+      pinnedIcon: this.pagePinnedIcon(),
+      pinnedLabel: this.pagePinnedLabel(),
+      redirectImmediate: this.pageRedirectImmediate(),
     });
   }
 
@@ -303,6 +290,7 @@ export default class EditPageModal extends FormModal {
           <option value="markdown">Markdown</option>
           <option value="text">{app.translator.trans('tryhackx-advanced-pages.admin.edit_page.type_text')}</option>
           <option value="php">PHP</option>
+          <option value="redirect">{app.translator.trans('tryhackx-advanced-pages.admin.edit_page.type_redirect')}</option>
         </select>
       </div>,
       80
@@ -356,7 +344,7 @@ export default class EditPageModal extends FormModal {
       );
     }
 
-    items.add('pageContent', this.buildEditorField(contentType), 70);
+    items.add('pageContent', contentType === 'redirect' ? this.buildRedirectField() : this.buildEditorField(contentType), 70);
 
     items.add(
       'visibility',
@@ -377,6 +365,43 @@ export default class EditPageModal extends FormModal {
         </div>
       </div>,
       60
+    );
+
+    items.add(
+      'pin',
+      <div className="Form-group">
+        <label className="checkbox">
+          <input type="checkbox" checked={this.pageIsPinned()} onchange={(e) => this.pageIsPinned(e.target.checked)} />
+          {app.translator.trans('tryhackx-advanced-pages.admin.edit_page.pin_to_nav_label')}
+        </label>
+        <p className="helpText">{app.translator.trans('tryhackx-advanced-pages.admin.edit_page.pin_to_nav_help')}</p>
+        {this.pageIsPinned() && (
+          <div className="AdvancedPages-pinOptions">
+            <div className="Form-group">
+              <label>{app.translator.trans('tryhackx-advanced-pages.admin.edit_page.pin_icon_label')}</label>
+              <input
+                className="FormControl"
+                placeholder="fas fa-book"
+                value={this.pagePinnedIcon()}
+                oninput={(e) => this.pagePinnedIcon(e.target.value)}
+              />
+              <p className="helpText">{app.translator.trans('tryhackx-advanced-pages.admin.edit_page.pin_icon_help')}</p>
+            </div>
+            <div className="Form-group">
+              <label>{app.translator.trans('tryhackx-advanced-pages.admin.edit_page.pin_short_name_label')}</label>
+              <input
+                className="FormControl"
+                maxlength="100"
+                placeholder={this.pageTitle()}
+                value={this.pagePinnedLabel()}
+                oninput={(e) => this.pagePinnedLabel(e.target.value)}
+              />
+              <p className="helpText">{app.translator.trans('tryhackx-advanced-pages.admin.edit_page.pin_short_name_help')}</p>
+            </div>
+          </div>
+        )}
+      </div>,
+      55
     );
 
     items.add(
@@ -517,6 +542,34 @@ export default class EditPageModal extends FormModal {
   lastSegment(slug) {
     const parts = (slug || '').split('/').filter(Boolean);
     return parts[parts.length - 1] || '';
+  }
+
+  // A redirect page stores its destination URL in `content`. Type is "text" (not
+  // "url") on purpose: we also accept root-relative paths like "/tags", which a
+  // native url input would reject. The value is validated server-side on save.
+  buildRedirectField() {
+    return (
+      <div className="Form-group">
+        <label>{app.translator.trans('tryhackx-advanced-pages.admin.edit_page.redirect_url_label')}</label>
+        <input
+          className="FormControl"
+          placeholder="https://example.com/  ·  /tags"
+          value={this.pageContent()}
+          oninput={(e) => this.pageContent(e.target.value)}
+        />
+        <p className="helpText">{app.translator.trans('tryhackx-advanced-pages.admin.edit_page.redirect_url_help')}</p>
+
+        <label className="checkbox AdvancedPages-redirectImmediate">
+          <input
+            type="checkbox"
+            checked={this.pageRedirectImmediate()}
+            onchange={(e) => this.pageRedirectImmediate(e.target.checked)}
+          />
+          {app.translator.trans('tryhackx-advanced-pages.admin.edit_page.redirect_immediate_label')}
+        </label>
+        <p className="helpText">{app.translator.trans('tryhackx-advanced-pages.admin.edit_page.redirect_immediate_help')}</p>
+      </div>
+    );
   }
 
   buildEditorField(contentType) {
@@ -693,6 +746,11 @@ export default class EditPageModal extends FormModal {
         !this.pageParentId() && this.customBreadcrumbsCss() && this.pageBreadcrumbsCss().trim()
           ? this.pageBreadcrumbsCss()
           : null,
+      isPinned: this.pageIsPinned(),
+      // Only persist icon/label when actually pinned; store null (not "") when blank.
+      pinnedIcon: this.pageIsPinned() && this.pagePinnedIcon().trim() ? this.pagePinnedIcon().trim() : null,
+      pinnedLabel: this.pageIsPinned() && this.pagePinnedLabel().trim() ? this.pagePinnedLabel().trim() : null,
+      redirectImmediate: this.pageRedirectImmediate(),
     };
   }
 

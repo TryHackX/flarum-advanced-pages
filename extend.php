@@ -1,15 +1,18 @@
 <?php
 
+use Flarum\Api\Context;
+use Flarum\Api\Resource\ForumResource;
+use Flarum\Api\Schema;
 use Flarum\Extend;
-use Flarum\Frontend\Controller as FrontendController;
-use Illuminate\Contracts\Container\Container;
 use TryHackX\AdvancedPages\Access;
 use TryHackX\AdvancedPages\Api\Controller\ShowPageBySlugController;
 use TryHackX\AdvancedPages\Api\Resource\PageResource;
 use TryHackX\AdvancedPages\Console\PermissionCommand;
-use TryHackX\AdvancedPages\Content\PageContent;
 use TryHackX\AdvancedPages\FormatterConfigurator;
+use TryHackX\AdvancedPages\Http\PageFormController;
+use TryHackX\AdvancedPages\Http\PageViewController;
 use TryHackX\AdvancedPages\Page;
+use TryHackX\AdvancedPages\PinnedPages;
 use TryHackX\AdvancedPages\Provider\AdvancedPagesServiceProvider;
 
 return [
@@ -17,31 +20,42 @@ return [
         ->js(__DIR__ . '/js/dist/admin.js')
         ->css(__DIR__ . '/resources/less/admin.less'),
 
+    // Forum assets. The GET /p/{slug} route itself is registered below via
+    // Extend\Routes → PageViewController, which can short-circuit a "redirect"
+    // page into a real HTTP 302 before the frontend renders.
     (new Extend\Frontend('forum'))
         ->js(__DIR__ . '/js/dist/forum.js')
-        ->css(__DIR__ . '/resources/less/forum.less')
-        ->route('/p/{slug:.+}', 'tryhackx-advanced-pages.page', PageContent::class),
+        ->css(__DIR__ . '/resources/less/forum.less'),
 
     new Extend\Locales(__DIR__ . '/resources/locale'),
 
     new Extend\ApiResource(PageResource::class),
+
+    // Expose the pages pinned to the index-sidebar navigation on the forum
+    // payload, so the forum JS can render the menu links without an extra
+    // request. Already scoped to the viewer's visibility and ordered like the
+    // admin page list; an empty array when nothing is pinned.
+    (new Extend\ApiResource(ForumResource::class))
+        ->fields(fn () => [
+            Schema\Arr::make('advancedPagesPinned')
+                ->get(fn ($model, Context $context) => (new PinnedPages($context->getActor()))->forNav()),
+        ]),
 
     // Look a page up by its full (possibly nested, slash-containing) slug — the
     // standard Show endpoint can only address a single-segment {id}.
     (new Extend\Routes('api'))
         ->get('/advanced-pages-by-slug/{slug:.+}', 'tryhackx-advanced-pages.by-slug', ShowPageBySlugController::class),
 
-    // Accept POST to /p/{slug} so PHP pages can handle form submissions and file
-    // uploads ($_POST / $_FILES). It re-renders the same frontend document as the
-    // GET route (mirrors Extend\Frontend's GET handler). CSRF is still enforced
-    // by the forum middleware — page forms must submit the `csrfToken` field,
-    // which is exposed to PHP pages as the $csrfToken variable.
     (new Extend\Routes('forum'))
-        ->post('/p/{slug:.+}', 'tryhackx-advanced-pages.page.post', function (Container $container) {
-            return new FrontendController(
-                $container->make('flarum.frontend.forum', ['content' => PageContent::class])
-            );
-        }),
+        // GET renders the page — or, for a "redirect" page in immediate mode,
+        // issues a real HTTP 302 (after counting the visit). See PageViewController.
+        ->get('/p/{slug:.+}', 'tryhackx-advanced-pages.page', PageViewController::class)
+        // Accept POST to /p/{slug} so PHP pages can handle form submissions and file
+        // uploads ($_POST / $_FILES). PageFormController re-renders the same frontend
+        // document as the GET route via Flarum's RouteHandlerFactory. CSRF is still
+        // enforced by the forum middleware — page forms must submit the `csrfToken`
+        // field, which is exposed to PHP pages as the $csrfToken variable.
+        ->post('/p/{slug:.+}', 'tryhackx-advanced-pages.page.post', PageFormController::class),
 
     (new Extend\ModelVisibility(Page::class))
         ->scope(Access\ScopePageVisibility::class),

@@ -61,6 +61,30 @@ export default class Page extends Model {
     return Model.attribute('breadcrumbsCss').call(this);
   }
 
+  isPinned() {
+    return Model.attribute('isPinned').call(this);
+  }
+
+  pinnedIcon() {
+    return Model.attribute('pinnedIcon').call(this);
+  }
+
+  pinnedLabel() {
+    return Model.attribute('pinnedLabel').call(this);
+  }
+
+  viewCount() {
+    return Model.attribute('viewCount').call(this);
+  }
+
+  redirectUrl() {
+    return Model.attribute('redirectUrl').call(this);
+  }
+
+  redirectImmediate() {
+    return Model.attribute('redirectImmediate').call(this);
+  }
+
   treeBreadcrumbsCss() {
     return Model.attribute('treeBreadcrumbsCss').call(this);
   }

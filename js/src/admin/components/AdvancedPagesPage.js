@@ -271,13 +271,14 @@ export default class AdvancedPagesPage extends ExtensionPage {
                 <th>{app.translator.trans('tryhackx-advanced-pages.admin.pages.type_column')}</th>
                 <th>{app.translator.trans('tryhackx-advanced-pages.admin.pages.status_column')}</th>
                 <th>{app.translator.trans('tryhackx-advanced-pages.admin.pages.groups_column')}</th>
+                <th>{app.translator.trans('tryhackx-advanced-pages.admin.pages.views_column')}</th>
                 <th>{app.translator.trans('tryhackx-advanced-pages.admin.pages.actions_column')}</th>
               </tr>
             </thead>
             <tbody>
               {this.pagesData().length === 0 ? (
                 <tr>
-                  <td colspan="6" className="AdvancedPages-empty">
+                  <td colspan="7" className="AdvancedPages-empty">
                     {app.translator.trans('tryhackx-advanced-pages.admin.pages.empty')}
                   </td>
                 </tr>
@@ -396,6 +397,7 @@ export default class AdvancedPagesPage extends ExtensionPage {
       bbcode: 'BBCode',
       markdown: 'Markdown',
       text: app.translator.trans('tryhackx-advanced-pages.admin.edit_page.type_text'),
+      redirect: app.translator.trans('tryhackx-advanced-pages.admin.edit_page.type_redirect'),
     };
 
     const id = Number(page.id());
@@ -450,6 +452,9 @@ export default class AdvancedPagesPage extends ExtensionPage {
         </td>
         <td className="AdvancedPages-groups">
           {this.groupLabels(page)}
+        </td>
+        <td className="AdvancedPages-views" title={app.translator.trans('tryhackx-advanced-pages.admin.pages.views_column')}>
+          <i className="fas fa-eye" /> {(page.viewCount() || 0).toLocaleString()}
         </td>
         <td className="AdvancedPages-actions">
           <Button

@@ -15,9 +15,10 @@ class PageRenderer
         HtmlRenderer $html,
         PhpRenderer $php,
         BbcodeRenderer $bbcode,
-        MarkdownRenderer $markdown
+        MarkdownRenderer $markdown,
+        RedirectRenderer $redirect
     ) {
-        $this->renderers = [$text, $html, $php, $bbcode, $markdown];
+        $this->renderers = [$text, $html, $php, $bbcode, $markdown, $redirect];
     }
 
     public function render(Page $page, ?User $actor = null, ?string $csrfToken = null): string

@@ -6,6 +6,7 @@ tryhackx-advanced-pages:
       create_text_label: "Tworzenie stron: Zwykły tekst"
       create_bbcode_label: "Tworzenie stron: BBCode"
       create_markdown_label: "Tworzenie stron: Markdown"
+      create_redirect_label: "Tworzenie stron: Przekierowanie"
 
     pages:
       create_button: Utwórz stronę
@@ -14,6 +15,7 @@ tryhackx-advanced-pages:
       type_column: Typ
       status_column: Status
       groups_column: Grupy
+      views_column: Wyświetlenia
       actions_column: Akcje
       edit_button: Edytuj
       published: Opublikowana
@@ -46,7 +48,12 @@ tryhackx-advanced-pages:
       slug_label: Slug URL
       content_type_label: Typ treści
       type_text: Zwykły tekst
+      type_redirect: Przekierowanie
       content_label: Treść
+      redirect_url_label: Adres przekierowania
+      redirect_url_help: "Dokąd trafiają odwiedzający tę stronę. Użyj pełnego adresu https:// (np. https://example.com) lub ścieżki względnej na tym forum (np. /tags). Przypnij stronę, aby dodać ją jako link w menu nawigacji — kliknięcia są zliczane."
+      redirect_immediate_label: "Przekierowuj natychmiast"
+      redirect_immediate_help: "Włączone: odwiedzający są od razu przenoszeni do celu (prawdziwe przekierowanie HTTP). Wyłączone: strona pokazuje się na chwilę, po czym automatycznie przenosi po około sekundzie. Tak czy inaczej wizyta jest najpierw zliczana."
       is_published_label: Opublikowana
       is_hidden_label: Ukryta (widoczna tylko dla adminów)
       is_restricted_label: Ograniczona (wymaga logowania)
@@ -72,6 +79,12 @@ tryhackx-advanced-pages:
       allow_scripts_help: "Bramkuje znaczniki script na tej stronie (domyślnie wyłączone): wyłączone — nie wykonują się, włączone — skrypty inline i zewnętrzne działają w przeglądarce każdego odwiedzającego. To NIE jest piaskownica — surowy HTML i tak może uruchomić JavaScript w inny sposób (np. atrybuty zdarzeń inline jak onerror), więc publikuj tylko strony HTML/PHP, którym w pełni ufasz."
       custom_breadcrumbs_css_label: "Własny CSS okruszków (breadcrumbs)?"
       custom_breadcrumbs_css_help: "Stylizuj (lub ukryj) okruszki dla tej strony i wszystkiego, co pod nią zagnieżdżone. Celuj w .AdvancedPages-breadcrumbs — np. display:none aby je ukryć."
+      pin_to_nav_label: "Przypnij do menu nawigacji"
+      pin_to_nav_help: "Pokaż tę stronę jako link w bocznej nawigacji forum (obok Wszystkie dyskusje, Użytkownicy itp.). Przypięte strony zachowują tę samą kolejność co lista stron i respektują widoczność każdej strony."
+      pin_icon_label: "Ikona menu (opcjonalnie)"
+      pin_icon_help: "Klasa FontAwesome dla linku w menu, np. \"fas fa-book\" lub \"far fa-file-alt\". Pozostaw puste, aby użyć domyślnej ikony."
+      pin_short_name_label: "Krótka nazwa (opcjonalnie)"
+      pin_short_name_help: "Krótsza etykieta do menu, na wypadek gdy tytuł strony jest zbyt długi. Pozostaw puste, aby użyć tytułu strony."
 
     support:
       button: Wesprzyj rozwój
@@ -85,6 +98,9 @@ tryhackx-advanced-pages:
       select: Zaznacz
       copy: Kopiuj
       copied: Skopiowano!
+    redirect:
+      countdown: "Zostaniesz przekierowany za {seconds} s…"
+      invalid: To przekierowanie nie ma skonfigurowanego prawidłowego celu.
     spoiler:
       locked: Nie masz uprawnień do wyświetlenia zawartości spoilera.
     page:

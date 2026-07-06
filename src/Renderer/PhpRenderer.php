@@ -4,14 +4,17 @@ namespace TryHackX\AdvancedPages\Renderer;
 
 use Flarum\Settings\SettingsRepositoryInterface;
 use Flarum\User\User;
+use Illuminate\Contracts\Container\Container;
 use Psr\Log\LoggerInterface;
 use TryHackX\AdvancedPages\Page;
+use TryHackX\AdvancedPages\PageTree;
 
 class PhpRenderer implements RendererInterface
 {
     public function __construct(
         protected LoggerInterface $logger,
-        protected SettingsRepositoryInterface $settings
+        protected SettingsRepositoryInterface $settings,
+        protected Container $container
     ) {
     }
 
@@ -61,7 +64,10 @@ class PhpRenderer implements RendererInterface
         $__settings = $this->settings;
         $__actor = $actor;
         $__csrfToken = $csrfToken;
-        $__pages = new \TryHackX\AdvancedPages\PageTree($actor);
+        // Resolve through the container (passing the per-render actor) instead of
+        // newing it up, so any future PageTree dependencies are auto-wired and
+        // tests can substitute a fake.
+        $__pages = $this->container->make(PageTree::class, ['actor' => $actor]);
 
         (function () use ($__page, $__actor, $__settings, $__csrfToken, $__pages) {
             $page = $__page;
