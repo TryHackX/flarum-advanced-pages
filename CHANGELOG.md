@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.1] - 2026-07-06
+
+### Changed
+- **The PHP renderer's exec method is renamed to tell the truth.**
+  `PhpRenderer::executeInSandbox()` → `executeUnsandboxed()`, with a docblock
+  spelling out that a PHP page runs `eval` with the **full privileges of the
+  web-server process** (`exec`/`system`, filesystem, env vars, DB, network) — there
+  is no sandbox and never was. This is by design: `advancedPages.create.php` stays
+  console-only behind `--force`, and the editor already shows a warning for the PHP
+  type. Pure naming/documentation change — the old name implied an isolation the
+  code never provided; no behaviour change.
+
+### Removed
+- **Dead `marked` highlight-option block in the admin editor.**
+  `marked.setOptions({ highlight })` had no effect — `marked` dropped that option in
+  v5 and the project is on v17, so the call was silently ignored. Admin preview code
+  highlighting is (and stays) handled by `highlightPreview()` via
+  `hljs.highlightElement`, so removing the block changes nothing on screen; it just
+  deletes code that never ran.
+
+*This release rebuilds the JS bundle; no CSS changes and no new migrations. Run
+`php flarum cache:clear` after updating (`composer` installs the prebuilt
+`js/dist`, so no Node build is needed on the server). Fully backward compatible.*
+
 ## [2.3.0] - 2026-07-06
 
 ### Added

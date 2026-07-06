@@ -38,7 +38,7 @@ class PhpRenderer implements RendererInterface
         });
 
         try {
-            $this->executeInSandbox($page, $actor, $csrfToken);
+            $this->executeUnsandboxed($page, $actor, $csrfToken);
             $output = ob_get_clean();
         } catch (\Throwable $e) {
             ob_end_clean();
@@ -58,7 +58,16 @@ class PhpRenderer implements RendererInterface
         return '<div class="AdvancedPages-phpContent">' . $output . '</div>';
     }
 
-    protected function executeInSandbox(Page $page, ?User $actor, ?string $csrfToken): void
+    /**
+     * Run the page's PHP with `eval`. This is NOT a sandbox: the code executes
+     * with the full privileges of the web-server process (exec/system, filesystem,
+     * env vars, DB, network) — publishing a PHP page is equivalent to dropping a
+     * .php file in the webroot. That is by design; the `advancedPages.create.php`
+     * permission is deliberately console-only (see PermissionCommand) precisely
+     * because it grants server-side code execution. Do not rename this back to
+     * anything implying isolation.
+     */
+    protected function executeUnsandboxed(Page $page, ?User $actor, ?string $csrfToken): void
     {
         $__page = $page;
         $__settings = $this->settings;

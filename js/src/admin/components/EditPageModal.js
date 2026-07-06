@@ -11,15 +11,6 @@ import CodeEditor from './CodeEditor';
 import EditorToolbar from './EditorToolbar';
 import ConfirmModal from './ConfirmModal';
 
-marked.setOptions({
-  highlight(code, lang) {
-    if (lang && hljs.getLanguage(lang)) {
-      return hljs.highlight(code, { language: lang }).value;
-    }
-    return hljs.highlightAuto(code).value;
-  },
-});
-
 function slugify(text) {
   return text
     .toLowerCase()
