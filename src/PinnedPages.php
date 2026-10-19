@@ -2,6 +2,7 @@
 
 namespace TryHackX\AdvancedPages;
 
+use Flarum\User\Guest;
 use Flarum\User\User;
 
 /**
@@ -46,9 +47,8 @@ class PinnedPages
             ->orderBy('position')
             ->orderBy('title');
 
-        if ($this->actor) {
-            $query->whereVisibleTo($this->actor);
-        }
+        // No actor = the least-privileged viewer (a guest), never "every page".
+        $query->whereVisibleTo($this->actor ?? new Guest());
 
         $pages = $query->get(self::COLUMNS);
 

@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.0] - 2026-10-20
+
+### Security
+- **Extended `[url]` parser: allow-list instead of a scheme deny-list.** With the
+  *Extended URL parser* setting on, a literal `[url]` left by s9e became a link
+  unless it started with exactly `javascript:` / `data:` / `vbscript:`. Browsers
+  strip leading spaces and ASCII tabs/newlines inside URLs, so
+  `[url= javascript:…]` still produced a clickable script link. Now only
+  `http(s)://`, `mailto:` and same-site links (`/path`, `#anchor`, `?query`)
+  become links; whitespace, control characters or a backslash leave the tag as
+  plain text. The target is also decoded once before escaping, so links with
+  `&` in the query string are no longer double-escaped (`&amp;amp;`).
+- **Redirect targets reject backslashes.** Browsers read `\` as `/` in http(s)
+  URLs, so a "root-relative" target like `/\example.com` left the site exactly
+  like the refused protocol-relative `//example.com`.
+- `PageTree` / `PinnedPages` without an actor now scope to a guest instead of
+  returning every page (hidden, unpublished and group-restricted included). No
+  current caller passes `null`; this closes the trap for PHP pages and future code.
+
+### Fixed
+- `advancedpages:permission grant <group> all` now also grants the
+  `redirect` type — "all" covered every create type except that one.
+
+### Changed
+- Requires Flarum `^2.0.2` and PHP `^8.3` (as Flarum 2.0.2 itself).
+
 ## [2.3.1] - 2026-07-06
 
 ### Changed

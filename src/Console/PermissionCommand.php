@@ -89,7 +89,7 @@ class PermissionCommand extends AbstractCommand
         if ($typeArg === 'all') {
             $permissions = [
                 self::TYPE_MAP['text'], self::TYPE_MAP['bbcode'], self::TYPE_MAP['markdown'],
-                self::TYPE_MAP['html'], self::TYPE_MAP['php'],
+                self::TYPE_MAP['redirect'], self::TYPE_MAP['html'], self::TYPE_MAP['php'],
             ];
         } elseif (isset(self::TYPE_MAP[$typeArg])) {
             $permissions = [self::TYPE_MAP[$typeArg]];

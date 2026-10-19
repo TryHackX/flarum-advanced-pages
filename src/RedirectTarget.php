@@ -26,8 +26,10 @@ final class RedirectTarget
         // Reject any whitespace or control character (a valid URL contains none —
         // spaces must be %20-encoded). This notably blocks CR/LF, so the target can
         // never inject a response header when used as a 302 `Location`, nor break
-        // out of the meta-refresh attribute.
-        if (preg_match('/[\x00-\x20\x7f]/', $url)) {
+        // out of the meta-refresh attribute. Backslashes are rejected too: browsers
+        // read "\" as "/" in http(s) URLs, so "/\host" would leave the site exactly
+        // like the protocol-relative "//host" refused below.
+        if (preg_match('/[\x00-\x20\x7f\\\\]/', $url)) {
             return false;
         }
 

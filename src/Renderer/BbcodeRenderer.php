@@ -121,20 +121,20 @@ class BbcodeRenderer implements RendererInterface
         $html = preg_replace_callback(
             '#\[url=(.*?)\](.*?)\[/url\]#i',
             function ($matches) {
-                $url = htmlspecialchars($matches[1], ENT_QUOTES, 'UTF-8');
-                $text = $matches[2];
-                if (preg_match('#^(javascript|data|vbscript):#i', $matches[1])) {
+                $url = $this->safeHref($matches[1]);
+                if ($url === null) {
                     return $matches[0];
                 }
-                return '<a href="' . $url . '" rel="nofollow ugc noopener">' . $text . '</a>';
+                // The link text is already escaped HTML (it comes from the rendered output).
+                return '<a href="' . $url . '" rel="nofollow ugc noopener">' . $matches[2] . '</a>';
             },
             $html
         );
         $html = preg_replace_callback(
             '#\[url\](.*?)\[/url\]#i',
             function ($matches) {
-                $url = htmlspecialchars($matches[1], ENT_QUOTES, 'UTF-8');
-                if (preg_match('#^(javascript|data|vbscript):#i', $matches[1])) {
+                $url = $this->safeHref($matches[1]);
+                if ($url === null) {
                     return $matches[0];
                 }
                 return '<a href="' . $url . '" rel="nofollow ugc noopener">' . $url . '</a>';
@@ -147,6 +147,32 @@ class BbcodeRenderer implements RendererInterface
         }
 
         return $html;
+    }
+
+    /**
+     * An escaped href for a literal [url] target, or null to leave the tag as text.
+     *
+     * The target comes from the rendered HTML, so it is already entity-escaped:
+     * decode it once (escaping it again would turn "&" into "&amp;amp;" and break
+     * query strings), then allow-list it. A deny-list of schemes is not enough —
+     * browsers strip leading spaces and ASCII tabs/newlines inside URLs, so
+     * " javascript:" or "java<TAB>script:" would still execute. Only http(s),
+     * mailto and same-site links ("/path", "#anchor", "?query") become links;
+     * any whitespace, control character or backslash rejects the target.
+     */
+    protected function safeHref(string $escaped): ?string
+    {
+        $url = trim(html_entity_decode($escaped, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+
+        if ($url === '' || preg_match('/[\x00-\x20\x7f\\\\]/', $url)) {
+            return null;
+        }
+
+        if (! preg_match('#^(?:https?://|mailto:|/(?!/)|\#|\?)#i', $url)) {
+            return null;
+        }
+
+        return htmlspecialchars($url, ENT_QUOTES, 'UTF-8');
     }
 
     protected function hideSpoilerContent(string $html): string

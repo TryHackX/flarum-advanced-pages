@@ -2,6 +2,7 @@
 
 namespace TryHackX\AdvancedPages;
 
+use Flarum\User\Guest;
 use Flarum\User\User;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -30,9 +31,8 @@ class PageTree
         if ($this->cache === null) {
             $query = Page::query()->orderBy('position')->orderBy('title');
 
-            if ($this->actor) {
-                $query->whereVisibleTo($this->actor);
-            }
+            // No actor = the least-privileged viewer (a guest), never "every page".
+            $query->whereVisibleTo($this->actor ?? new Guest());
 
             $this->cache = $query->get();
         }
