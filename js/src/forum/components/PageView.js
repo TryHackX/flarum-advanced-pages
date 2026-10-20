@@ -3,6 +3,7 @@ import Page from 'flarum/common/components/Page';
 import LoadingIndicator from 'flarum/common/components/LoadingIndicator';
 import Link from 'flarum/common/components/Link';
 import addCodeToolbar from '../addCodeToolbar';
+import pageUrl from '../pageUrl';
 import hljs from '../../common/hljs';
 
 export default class PageView extends Page {
@@ -256,7 +257,8 @@ export default class PageView extends Page {
         items.push(<span className="AdvancedPages-breadcrumbSep">/</span>);
       }
       items.push(
-        <Link className="AdvancedPages-breadcrumbLink" href={'/p/' + ancestor.slug}>
+        // pageUrl() includes the base path of a forum installed in a subfolder.
+        <Link className="AdvancedPages-breadcrumbLink" href={pageUrl(ancestor.slug)}>
           {ancestor.title}
         </Link>
       );

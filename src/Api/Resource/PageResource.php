@@ -332,6 +332,23 @@ class PageResource extends AbstractDatabaseResource
             $model->edit_user_id = $actor->id;
         }
 
+        // Store visible_groups as unique integer ids. The scope matches them with
+        // whereJsonContains(<int>), so a string "3" in the JSON would never match
+        // while PagePolicy's (int) cast still would — the listing and a direct
+        // view would disagree. Anything that is not a group id is rejected rather
+        // than dropped: dropping it could empty the list, i.e. "everyone".
+        if (is_array($model->visible_groups)) {
+            $ids = [];
+            foreach ($model->visible_groups as $id) {
+                $valid = (is_int($id) || (is_string($id) && ctype_digit($id))) && (int) $id > 0;
+                if (! $valid) {
+                    throw new ValidationException(['visibleGroups' => 'Visible groups must be a list of group ids.']);
+                }
+                $ids[] = (int) $id;
+            }
+            $model->visible_groups = array_values(array_unique($ids));
+        }
+
         // Normalise an empty visible_groups array to NULL ("no restriction").
         // The `array` cast persists [] as the JSON string '[]', which the
         // visibility scope's whereNull()/whereJsonContains() checks would all
@@ -391,6 +408,11 @@ class PageResource extends AbstractDatabaseResource
         // Pre-fetch the whole (id => parent_id) forest in one query and walk it
         // in memory, instead of issuing one SELECT per ancestor level.
         $parentOf = Page::query()->pluck('parent_id', 'id')->all();
+
+        // An unknown parent would only fail at the foreign key (a 500) — report it.
+        if (! array_key_exists((int) $model->parent_id, $parentOf)) {
+            throw new ValidationException(['parentId' => 'The selected parent page does not exist.']);
+        }
 
         $ancestorId = (int) $model->parent_id;
         $seen = [];

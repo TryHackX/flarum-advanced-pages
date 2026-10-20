@@ -10,6 +10,7 @@ import hljs from '../../common/hljs';
 import CodeEditor from './CodeEditor';
 import EditorToolbar from './EditorToolbar';
 import ConfirmModal from './ConfirmModal';
+import sanitizePreview from '../utils/sanitizePreview';
 
 function slugify(text) {
   return text
@@ -643,20 +644,24 @@ export default class EditPageModal extends FormModal {
     const content = this.pageContent() || '';
 
     switch (contentType) {
+      // HTML pages are executable by design (their creation permission is
+      // console-only) and run the same way on the forum — preview as-is.
       case 'html':
         return content;
+      // BBCode / Markdown / text are rendered safely by Flarum's formatter on the
+      // forum; their preview must not be more dangerous than the real page.
       case 'markdown':
         try {
-          return marked(content, { breaks: true });
+          return sanitizePreview(marked(content, { breaks: true }));
         } catch (e) {
           return '<p>' + content.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</p>';
         }
       case 'bbcode':
-        return this.renderBbcode(content);
+        return sanitizePreview(this.renderBbcode(content));
       case 'text':
         return '<div style="white-space:pre-wrap">' + content.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div>';
       default:
-        return content;
+        return sanitizePreview(content);
     }
   }
 

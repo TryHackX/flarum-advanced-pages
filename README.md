@@ -60,7 +60,9 @@ formatting toolbars, and granular access control.
 - **SEO support** — meta descriptions and proper `<title>` tags.
 - **Access control** — publish, hide (admin-only), restrict
   (login-required), per-group visibility (works on MySQL/MariaDB,
-  SQLite 3.38+ and PostgreSQL).
+  SQLite 3.38+ and PostgreSQL). For group-restricted pages a suspended
+  user, or one whose e-mail is not confirmed yet, counts as a guest — as
+  for every other permission in Flarum.
 - **Granular permissions** — manage pages, view spoiler content, and
   per-content-type page creation (text/BBCode/Markdown in the admin
   grid; HTML/PHP via console command).

@@ -2,6 +2,7 @@ import app from 'flarum/forum/app';
 import { extend } from 'flarum/common/extend';
 import IndexSidebar from 'flarum/forum/components/IndexSidebar';
 import LinkButton from 'flarum/common/components/LinkButton';
+import pageUrl from './pageUrl';
 
 // Add admin-pinned Advanced Pages to the index-sidebar navigation — the same
 // "Dropdown-menu" list where core's "All Discussions" and extension links like
@@ -30,7 +31,8 @@ export default function pinnedNav() {
         // straight away (a 302, or the countdown page) — no PageView "Loading…"
         // step, and it works for PHP header()-based pages too. It mirrors how the
         // admin page-list "open" link already behaves.
-        <LinkButton href={'/p/' + page.slug} icon={page.icon || 'far fa-file-alt'} external={true}>
+        // pageUrl() adds the forum's base path (a forum installed in a subfolder).
+        <LinkButton href={pageUrl(page.slug)} icon={page.icon || 'far fa-file-alt'} external={true}>
           {page.title}
         </LinkButton>,
         90 - index

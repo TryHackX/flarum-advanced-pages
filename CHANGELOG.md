@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.1] - 2026-10-20
+
+### Security
+- **The admin editor's Preview no longer runs code from BBCode / Markdown
+  pages.** The preview is rendered in the browser — a light BBCode converter
+  and `marked`, which passes raw HTML through — while the forum renders the same
+  pages with Flarum's formatter, which escapes everything. A page written by a
+  non-admin author (e.g. `[img]x" onerror="…[/img]`, or raw HTML in Markdown)
+  ran JavaScript in the session of whoever opened its preview, an administrator
+  included. The preview is now parsed in an inert document and stripped of
+  scripts, `on*` handlers and non-http(s) URLs. HTML pages keep their raw
+  preview — they are executable by design and run the same way on the forum.
+- **Group-restricted pages follow Flarum's permission groups.** A suspended
+  user (flarum/suspend) or an account whose e-mail is not confirmed yet now
+  counts as a guest for per-group visibility, exactly like for every other
+  permission; before, they kept access to their groups' pages. "Guest" in a
+  page's groups still means "not logged in". Login-required pages are unchanged.
+
+### Fixed
+- A parent page that does not exist is reported on the *Parent* field (422)
+  instead of failing at the database foreign key with a server error.
+- Visible groups are stored as unique group ids; a value that is not a group id
+  is rejected. A string such as `"3"` used to be stored as-is — the listing
+  (JSON match on the number) then hid the page while a direct view allowed it.
+- Breadcrumb and pinned-navigation links include the forum's base path, so they
+  work for a forum installed in a subfolder (`example.com/forum/p/…`).
+
 ## [2.4.0] - 2026-10-20
 
 ### Security

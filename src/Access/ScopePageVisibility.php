@@ -2,7 +2,6 @@
 
 namespace TryHackX\AdvancedPages\Access;
 
-use Flarum\Group\Group;
 use Flarum\User\User;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -30,12 +29,9 @@ class ScopePageVisibility
             $query->whereNull('visible_groups')
                 ->orWhere('visible_groups', '[]');
 
-            $groupIds = $actor->isGuest()
-                ? [Group::GUEST_ID]
-                : array_unique(array_merge(
-                    $actor->groups->pluck('id')->toArray(),
-                    [Group::MEMBER_ID]
-                ));
+            // Same group set as PagePolicy (suspended / unconfirmed users count
+            // as guests, see VisibilityGroups).
+            $groupIds = VisibilityGroups::of($actor);
 
             // whereJsonContains() resolves to the correct JSON operator for each
             // supported database driver (MySQL/MariaDB, SQLite 3.38+, PostgreSQL),

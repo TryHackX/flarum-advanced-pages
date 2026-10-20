@@ -2,7 +2,6 @@
 
 namespace TryHackX\AdvancedPages\Access;
 
-use Flarum\Group\Group;
 use Flarum\User\Access\AbstractPolicy;
 use Flarum\User\User;
 use TryHackX\AdvancedPages\Page;
@@ -32,11 +31,7 @@ class PagePolicy extends AbstractPolicy
         // null/empty visible_groups means "everyone".
         $visibleGroups = $page->visible_groups;
         if (is_array($visibleGroups) && count($visibleGroups) > 0) {
-            $actorGroupIds = $actor->isGuest()
-                ? [Group::GUEST_ID]
-                : $actor->groups->pluck('id')->push(Group::MEMBER_ID)->all();
-
-            $actorGroupIds = array_map('intval', $actorGroupIds);
+            $actorGroupIds = VisibilityGroups::of($actor);
 
             $inVisibleGroup = false;
             foreach ($visibleGroups as $groupId) {
