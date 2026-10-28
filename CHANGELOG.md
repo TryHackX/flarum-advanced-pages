@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.3] - 2026-10-28
+
+### Added
+- **German, Russian, Vietnamese and Simplified Chinese translations** (`de`, `ru`, `vi`, `zh-Hans`) from Weblate,
+  by Claudius Henrichs (German), Arseny (Russian), Ngô Quốc Đạt (Vietnamese) and Golden, tuboshu and yannisme
+  (Simplified Chinese): all 92 texts in each. Checked against the English ones like the Spanish one: the same
+  placeholders, no markup, no links and nothing that runs; the longest labels wrap in the admin table and fit the
+  code-block toolbar.
+
 ## [2.4.2] - 2026-10-28
 
 ### Added
